@@ -61,14 +61,14 @@ class IrradSimple:
         self.sample_nuc = data_dict['fissile_nuc']
         self.sample_dens = data_dict['dens_g_cc']
         self.chain = data_dict['chain']
+        self.name = data_dict['name']
 
         self.r_outer = 10
         self.vol = 3
         self.seed = 1
-        self.net_irrad_time_s = 20 #5 * 60
+        self.net_irrad_time_s = 5 * 60
 
         self._get_data()
-        self._check_pathing()
         return
     
     def _check_pathing(self):
@@ -258,6 +258,7 @@ class IrradSimple:
         Irradiate the sample
 
         """
+        self._check_pathing()
         self.build_model()
         coupled_operator = openmc.deplete.CoupledOperator(self.model,
                                                           chain_file=self.chain,
@@ -282,6 +283,8 @@ class IrradSimple:
                 Nuclide name
             value: :class:`np.ndarray`
                 Array of concentrations over time
+        times : :class:`np.ndarray`
+            Time vector
         """
         concs = dict()
         results = openmc.deplete.Results(f'{self.output_path}/depletion_results.h5')
@@ -291,7 +294,7 @@ class IrradSimple:
             _, nuc_conc = results.get_atoms('1',
                                             nuc=nuc)
             concs[nuc] = nuc_conc
-        return concs
+        return concs, self.times
     
     def collect_fissions(self, print_fiss=False):
         """
