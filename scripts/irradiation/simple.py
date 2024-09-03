@@ -3,6 +3,7 @@ import openmc.deplete
 import numpy as np
 import shutil
 import glob
+import pandas as pd
 
 class IrradSimple:
     """
@@ -278,6 +279,48 @@ class IrradSimple:
                                             nuc=nuc)
             concs[nuc] = nuc_conc
         return concs
+    
+    def collect_fissions(self, print_fiss=False):
+        """
+        Collect fission tally data from OpenMC depletion results
+
+        Returns
+        -------
+        fissions : dict
+            key : str
+                Nuclide name
+            value : :class:`np.ndarray`
+                Array of net fissions over time
+        """
+        fissions = dict()
+        for i in range(len(self.times)):
+            sp = openmc.StatePoint(f'{self.output_path}/openmc_simulation_n{i}.h5')
+            for tally in sp.tallies.keys():
+                tally_data = sp.get_tally(id=tally)
+                if 'fissions' in tally_data.name:
+                    df = tally_data.get_pandas_dataframe(filters=False, scores=False, derivative=False, paths=False)
+                    try:
+                        df['mean'] = df['mean'] * self.S_rate
+                    except KeyError:
+                        continue
+                    df_sorted = df.sort_values(by='mean', ascending=False)
+                    df_sorted = df_sorted.reset_index(drop=True)
+                    if i == 0:
+                        for nuc in df_sorted['nuclide']:
+                            fissions[nuc] = np.zeros(len(self.times))
+                        fissions['net'] = np.zeros(len(self.times))
+                    for nuc_i, nuc in enumerate(df_sorted['nuclide']):
+                        fissions[nuc][i] = df_sorted['mean'][nuc_i]
+                        fissions['net'][i] += fissions[nuc][i]
+
+        fiss_keys = list(fissions.keys())
+        for nuc in fiss_keys:
+            if np.all(fissions[nuc] == np.zeros(len(self.times))):
+                del fissions[nuc]
+        if print_fiss:
+            print(fissions)
+        return fissions
+
 
 if __name__ == "__main__":
     t_incore_s = 10
@@ -310,3 +353,4 @@ if __name__ == "__main__":
     #model = irrad.build_model(xml_export=False)
     #irrad.irradiate()
     irrad.collect_concentrations()
+    irrad.collect_fissions()
