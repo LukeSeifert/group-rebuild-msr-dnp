@@ -4,6 +4,7 @@ import numpy as np
 import shutil
 import glob
 import os
+import pandas as pd
 import time
 
 class IrradSimple:
@@ -66,10 +67,38 @@ class IrradSimple:
         self.r_outer = 10
         self.vol = 3
         self.seed = 1
-        self.net_irrad_time_s = 5 * 60
+        self.net_irrad_time_s = 30 #5 * 60
+        self.fiss_tally_name = 'fission-rate'
 
         self._get_data()
         return
+    
+    def _format_nucs_iaea_to_janis(self, nuc_info):
+        """
+        Converts from 14BE to Be14
+        """
+        digits = ''.join(filter(str.isdigit, nuc_info[0]))
+        letters = ''.join(filter(str.isalpha, nuc_info[0])) 
+        if nuc_info[1] > 0:
+            metastable = nuc_info[1] * 'm'
+        else:
+            metastable = -nuc_info[1] * 'negm'
+        return letters.capitalize() + digits + metastable
+    
+    def _read_iaea_csv(self):
+        """
+        Read the iaea csv data and organize
+        Data from https://www-nds.iaea.org/relnsd/delayedn/delayedn.html
+        Download CSV evaluation and do not change
+        """
+        dataframe = pd.read_csv(f'../../data/eval.csv',
+                                skiprows=1, header=0)
+        self.iaea_nucs = dataframe['nucid']
+        metastable = dataframe[' liso']
+        nuc_info = zip(self.iaea_nucs, metastable)
+        self.iaea_nucs = [self._format_nucs_iaea_to_janis(i) for i in nuc_info]
+        dataframe['nucid'] = self.iaea_nucs
+        return dataframe
     
     def _check_pathing(self):
         """
@@ -91,6 +120,7 @@ class IrradSimple:
         """
         xs_library = openmc.data.DataLibrary.from_xml('/home/luke/projects/cross-section-libraries/endfb-viii.0-hdf5/cross_sections.xml')
         self.xs_nuclide_list = [i['materials'][0] for i in xs_library.libraries][0:556]
+        self._read_iaea_csv() # Generates self.iaea_nucs
         return
     
     def _settings(self):
@@ -167,13 +197,22 @@ class IrradSimple:
         mesh.upper_right = np.array([self.r_outer, self.r_outer, self.r_outer])
         mesh_filter = openmc.MeshFilter(mesh)
 
-        # Net Fissions tally
-        fission_tally = openmc.Tally(name='fissions')
+        # Fission Rate tally
+        fission_tally = openmc.Tally(name=self.fiss_tally_name)
         fission_tally.filters = [mesh_filter]
         fission_tally.scores = ['fission']
         fission_tally.multiply_density = True
         fission_tally.nuclides = self.xs_nuclide_list
         tallies_file.append(fission_tally)
+
+        # Delayed Neutron Yield tally
+        delnu_tally = openmc.Tally(name='delnuyield')
+        delnu_tally.filters = [mesh_filter]
+        delnu_tally.scores = ['delayed-nu-fission']
+        delnu_tally.multiply_density = True
+        delnu_tally.nuclides = list(set(self.xs_nuclide_list + self.iaea_nucs))
+        tallies_file.append(delnu_tally)
+
         return tallies_file
     
     def build_model(self, xml_export=False):
@@ -223,15 +262,14 @@ class IrradSimple:
         Get the timestep list and source rate list
 
         """
-        self.net_irrad_time_s
-        self.t_incore
-        self.t_excore
         cur_t = 0
         timesteps = []
         source_rates = []
 
         def _step_helper(t, s, cur_t, net_t):
             break_condition = False
+            if t == 0:
+                return break_condition, cur_t
             timesteps.append(t)
             source_rates.append(s)
             cur_t += t
@@ -313,7 +351,7 @@ class IrradSimple:
             sp = openmc.StatePoint(f'{self.output_path}/openmc_simulation_n{i}.h5')
             for tally in sp.tallies.keys():
                 tally_data = sp.get_tally(id=tally)
-                if 'fissions' in tally_data.name:
+                if self.fiss_tally_name in tally_data.name:
                     df = tally_data.get_pandas_dataframe(filters=False, scores=False, derivative=False, paths=False)
                     try:
                         df['mean'] = df['mean'] * self.S_rate
@@ -331,7 +369,7 @@ class IrradSimple:
 
         fiss_keys = list(fissions.keys())
         for nuc in fiss_keys:
-            if np.all(fissions[nuc] == np.zeros(len(self.times))):
+            if np.all(fissions[nuc] <= 1e-12 * np.ones(len(self.times))):
                 del fissions[nuc]
         if print_fiss:
             print(fissions)
@@ -341,7 +379,7 @@ class IrradSimple:
 if __name__ == "__main__":
     import ui
 
-    irrad = IrradSimple(data_dict=ui.base_case_data)
+    irrad = IrradSimple(data_dict=ui.static_data)
     irrad.irradiate()
     irrad.collect_concentrations()
     irrad.collect_fissions()
