@@ -26,7 +26,7 @@ static_data = {
 't_incore_s': 20,
 't_excore_s': 0,
 'n_MeV': 0.0253 * 1e-6,
-'S_rate_per_s': 1e10,
+'S_rate_per_s': 1e10/2,
 'batches': 10,
 'output_path': f'./results/{name}',
 'nps': 1000,
