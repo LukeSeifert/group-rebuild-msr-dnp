@@ -52,7 +52,6 @@ class IrradSimple:
         self.n_energy = n_MeV
         self.S_rate = S_rate_per_s
         self.batches = batches
-        self.inactive = inactive
         self.output_path = output_path
         self.nps = nps
         self.photons = photon_bool
@@ -124,7 +123,7 @@ class IrradSimple:
 
         """
         sphere = openmc.Sphere(r=self.r_outer,
-                               boundary_type='reflective')
+                               boundary_type='vacuum')
         sample_mat = self.materials[0]
         sphere_cell = openmc.Cell(region=-sphere,
                                   fill=sample_mat)
@@ -136,10 +135,6 @@ class IrradSimple:
         tallies = None
         return tallies
     
-    def _plots(self):
-        plots = None
-        return plots
- 
     def build_model(self, xml_export=False):
 
 
@@ -161,12 +156,10 @@ class IrradSimple:
         self.materials = self._materials()
         self.geometry = self._geometry()
         self.tallies = self._tallies()
-        self.plots = self._plots()
         model = openmc.model.Model(self.geometry,
                                    self.materials,
-                                   self.settings,
-                                   self.tallies,
-                                   self.plots)
+                                   self.settings)#,
+                                   #self.tallies)
         if xml_export:
             model.export_to_xml()
         self.model = model
@@ -191,16 +184,16 @@ class IrradSimple:
             cur_t += t
             if cur_t > net_t:
                 break_condition = True
-            return break_condition
+            return break_condition, cur_t
 
 
         while True:
-            break_condition = _step_helper(self.t_incore, self.S_rate, cur_t,
+            break_condition, cur_t = _step_helper(self.t_incore, self.S_rate, cur_t,
                                            self.net_irrad_time_s)
             if break_condition:
                 break
 
-            break_condition = _step_helper(self.t_excore, 0, cur_t,
+            break_condition, cur_t = _step_helper(self.t_excore, 0, cur_t,
                                            self.net_irrad_time_s)
             if break_condition:
                 break
@@ -218,7 +211,7 @@ class IrradSimple:
         timesteps, source_rates = self._get_times_rates()
         integrator = openmc.deplete.PredictorIntegrator(coupled_operator,
                                                         timesteps=timesteps,
-                                                        sources_rates=source_rates,
+                                                        source_rates=source_rates,
                                                         timestep_units='s')
         integrator.integrate()
         return
@@ -245,7 +238,6 @@ if __name__ == "__main__":
                         n_MeV=n_MeV,
                         S_rate_per_s=S_rate_per_s,
                         batches=batches,
-                        inactive=inactive,
                         output_path=output_path,
                         nps=nps,
                         photon_bool=photon_bool,
@@ -255,3 +247,4 @@ if __name__ == "__main__":
                         dens_g_cc=dens_g_cc,
                         chain=chain)
     model = irrad.build_model(xml_export=False)
+    irrad.irradiate()
