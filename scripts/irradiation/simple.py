@@ -1,4 +1,5 @@
 import openmc
+import openmc.deplete
 import numpy as np
 
 class IrradSimple:
@@ -11,10 +12,10 @@ class IrradSimple:
     """
 
     def __init__(self, t_incore_s: float, t_excore_s: float, n_MeV: float,
-                 S_rate_per_s: float, batches: int, inactive: int,
+                 S_rate_per_s: float, batches: int,
                  output_path: str, nps: float, photon_bool: bool,
                  run_mode: str, temperature_K: float, fissile_nuc: str,
-                 dens_g_cc: float):
+                 dens_g_cc: float, chain: str):
         """
 
         Parameters
@@ -29,8 +30,6 @@ class IrradSimple:
             Irradiation source rate
         batches : int
             Number of batches to use in OpenMC
-        inactive : int
-            Number of inactive batches
         output_path : str
             Path to write OpenMC output
         nps : float
@@ -45,6 +44,8 @@ class IrradSimple:
             Fissile nuclide of which sample is composed
         dens_g_cc : float
             Density of the sample in grams per cubic centimeter
+        chain : str
+            Path to chain xml file
         """
         self.t_incore = t_incore_s
         self.t_excore = t_excore_s
@@ -59,10 +60,12 @@ class IrradSimple:
         self.temperature = temperature_K
         self.sample_nuc = fissile_nuc
         self.sample_dens = dens_g_cc
+        self.chain = chain
 
         self.r_outer = 10
         self.vol = 3
         self.seed = 1
+        self.net_irrad_time_s = 5 * 60
         return
     
     def _settings(self):
@@ -75,7 +78,6 @@ class IrradSimple:
         """
         settings = openmc.Settings()
         settings.batches = self.batches
-        settings.inactive = self.inactive
         settings.output = {'path': self.output_path,
                            'summary': False,
                            'tallies': False}
@@ -137,9 +139,10 @@ class IrradSimple:
     def _plots(self):
         plots = None
         return plots
-
-    
+ 
     def build_model(self, xml_export=False):
+
+
         """
         Builds the OpenMC model
 
@@ -166,7 +169,60 @@ class IrradSimple:
                                    self.plots)
         if xml_export:
             model.export_to_xml()
+        self.model = model
         return model
+        
+    def _get_times_rates(self):
+        """
+        Get the timestep list and source rate list
+
+        """
+        self.net_irrad_time_s
+        self.t_incore
+        self.t_excore
+        cur_t = 0
+        timesteps = []
+        source_rates = []
+
+        def _step_helper(t, s, cur_t, net_t):
+            break_condition = False
+            timesteps.append(t)
+            source_rates.append(s)
+            cur_t += t
+            if cur_t > net_t:
+                break_condition = True
+            return break_condition
+
+
+        while True:
+            break_condition = _step_helper(self.t_incore, self.S_rate, cur_t,
+                                           self.net_irrad_time_s)
+            if break_condition:
+                break
+
+            break_condition = _step_helper(self.t_excore, 0, cur_t,
+                                           self.net_irrad_time_s)
+            if break_condition:
+                break
+
+        return timesteps, source_rates
+    
+    def irradiate(self):
+        """
+        Irradiate the sample
+
+        """
+        coupled_operator = openmc.deplete.CoupledOperator(self.model,
+                                                          chain_file=self.chain,
+                                                          normalization_mode='source-rate')
+        timesteps, source_rates = self._get_times_rates()
+        integrator = openmc.deplete.PredictorIntegrator(coupled_operator,
+                                                        timesteps=timesteps,
+                                                        sources_rates=source_rates,
+                                                        timestep_units='s')
+        integrator.integrate()
+        return
+
 
 
 if __name__ == "__main__":
@@ -175,7 +231,6 @@ if __name__ == "__main__":
     n_MeV = 0.0253 * 1e-6
     S_rate_per_s = 1e10
     batches = 10
-    inactive = 5
     output_path = './results'
     nps = 1000
     photon_bool = False
@@ -183,6 +238,7 @@ if __name__ == "__main__":
     temperature_K = 298.15
     fissile_nuc = 'U235'
     dens_g_cc = 10
+    chain = '../../data/chain/chain_casl_pwr.xml'
 
     irrad = IrradSimple(t_incore_s=t_incore_s,
                         t_excore_s=t_excore_s,
@@ -196,5 +252,6 @@ if __name__ == "__main__":
                         run_mode=run_mode,
                         temperature_K=temperature_K,
                         fissile_nuc=fissile_nuc,
-                        dens_g_cc=dens_g_cc)
+                        dens_g_cc=dens_g_cc,
+                        chain=chain)
     model = irrad.build_model(xml_export=False)
