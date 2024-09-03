@@ -3,7 +3,8 @@ import openmc.deplete
 import numpy as np
 import shutil
 import glob
-import pandas as pd
+import os
+import time
 
 class IrradSimple:
     """
@@ -67,8 +68,22 @@ class IrradSimple:
         self.net_irrad_time_s = 20 #5 * 60
 
         self._get_data()
+        self._check_pathing()
         return
     
+    def _check_pathing(self):
+        """
+        Checks output path to makes sure it doesn't already exist and creates
+            it.
+        """
+        if os.path.exists(self.output_path):
+            print(f'Path {self.output_path} already exists')
+            print('Deleting existing results in 5 seconds unless interrupted')
+            time.sleep(5)
+            shutil.rmtree(f'{self.output_path}')
+        os.makedirs(self.output_path)
+        return
+ 
     def _get_data(self):
         """
         Generate data for use in other methods
@@ -324,6 +339,6 @@ if __name__ == "__main__":
     import ui
 
     irrad = IrradSimple(data_dict=ui.base_case_data)
-    #irrad.irradiate()
+    irrad.irradiate()
     irrad.collect_concentrations()
     irrad.collect_fissions()
