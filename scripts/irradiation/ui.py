@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 name = 'flowing'
 base_case_data = {
 'name': name,
@@ -15,3 +17,43 @@ base_case_data = {
 'dens_g_cc': 10,
 'chain': '../../data/chain/chain_casl_pwr.xml'
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+plt.rcParams["font.family"] = "Times New Roman"
+plt.rcParams["text.usetex"] = "True"
+plt.rcParams["font.size"] = 16
+plt.rcParams["axes.labelsize"] = 20
+plt.rcParams["axes.labelweight"] = "bold"
+plt.rcParams["lines.linewidth"] = 1.5
+plt.rcParams["lines.markersize"] = 1
+plt.rcParams["axes.grid"] = True
+plt.rcParams["axes.grid.which"] = "major"
+plt.rcParams["grid.linestyle"] = "--"
+plt.rcParams["grid.linewidth"] = 1
+plt.rcParams["xtick.direction"] = "in"
+plt.rcParams["ytick.direction"] = "in"
+plt.rcParams["xtick.major.size"] = 6.0
+plt.rcParams["ytick.major.size"] = 6.0
+plt.rcParams["xtick.minor.size"] = 3.0
+plt.rcParams["ytick.minor.size"] = 3.0
+plt.rcParams["figure.autolayout"] = True
+plt.rcParams['savefig.dpi'] = 300
