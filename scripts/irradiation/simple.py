@@ -118,6 +118,7 @@ class IrradSimple:
         """
         sample = openmc.Material()# Define the geometry
         sample.name = 'sample'
+        sample.id = 1
         sample.add_nuclide(self.sample_nuc, 100)
         sample.set_density('g/cc', self.sample_dens)
         sample.depletable = True
@@ -256,7 +257,27 @@ class IrradSimple:
         self._cleanup()
         return
 
+    def collect_concentrations(self):
+        """
+        Collect concentration data from OpenMC depletion results
 
+        Returns
+        -------
+        concs : dict 
+            key : str
+                Nuclide name
+            value: :class:`np.ndarray`
+                Array of concentrations over time
+        """
+        concs = dict()
+        results = openmc.deplete.Results(f'{self.output_path}/depletion_results.h5')
+        self.times = results.get_times('s')
+        self.dep_nuclides = list(results[0].index_nuc.keys())
+        for nuc in self.dep_nuclides:
+            _, nuc_conc = results.get_atoms('1',
+                                            nuc=nuc)
+            concs[nuc] = nuc_conc
+        return concs
 
 if __name__ == "__main__":
     t_incore_s = 10
@@ -286,5 +307,6 @@ if __name__ == "__main__":
                         fissile_nuc=fissile_nuc,
                         dens_g_cc=dens_g_cc,
                         chain=chain)
-    model = irrad.build_model(xml_export=False)
-    irrad.irradiate()
+    #model = irrad.build_model(xml_export=False)
+    #irrad.irradiate()
+    irrad.collect_concentrations()
