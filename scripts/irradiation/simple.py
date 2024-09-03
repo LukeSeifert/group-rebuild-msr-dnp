@@ -26,7 +26,8 @@ class IrradSimple:
         self.sample_nuc = fissile_nuc
         self.sample_dens = dens_g_cc
 
-        self.s_r_outer = 10
+        self.r_outer = 10
+        self.vol = 3
         return
     
     def _settings(self):
@@ -50,10 +51,10 @@ class IrradSimple:
 
         source = openmc.Source()
         source.energy = openmc.stats.Uniform(self.n_energy, self.n_energy)
-        source.space = openmc.stats.spherical_uniform(r_outer=self.s_r_outer)
+        source.space = openmc.stats.spherical_uniform(r_outer=self.r_outer)
         source.angle = openmc.stats.Isotropic()
 
-        settings.source = #TODO
+        settings.source = source
         settings.temperature = {'default': self.temperature,
                                 'method': 'interpolation'}
         return settings
@@ -66,18 +67,42 @@ class IrradSimple:
         -------
         materials : :class:`openmc.Materials`
         """
-        sample = openmc.Material()
+        sample = openmc.Material()# Define the geometry
         sample.name = 'sample'
         sample.add_nuclide(self.sample_nuc)
         sample.density = self.sample_dens
         sample.density_units = 'g/cm3'
         sample.depletable = True
-        sample.volume = 3
+        sample.volume = self.vol
 
         materials = openmc.Materials([sample], 100)
         return materials
     
     def _geometry(self):
+        """
+        Build the geometry for OpenMC
+
+        Returns
+        -------
+        geometry : :class:`openmc.Geometry` 
+
+        """
+        sphere = openmc.Sphere(r=self.r_outer,
+                               boundary_type='reflective')
+        sample_mat = self.materials[0]
+        sphere_cell = openmc.Cell(region=-sphere,
+                                  fill=sample_mat)
+        universe = openmc.Universe(cells=[sphere_cell])
+        geometry = openmc.Geometry(universe)
+        return geometry
+    
+    def _tallies(self):
+        tallies = None
+        return tallies
+    
+    def _plots(self):
+        plots = None
+        return plots
 
     
     def build_model(self, xml_export=False):
@@ -95,13 +120,16 @@ class IrradSimple:
             The built model
         
         """
-        settings = self._settings()
-        materials = self._materials()
-        geometry = self._geometry()
-        tallies = self._tallies()
-        plots = self._plots()
-        model = openmc.model.Model(geometry, materials, settings, tallies,
-                                   plots)
+        self.settings = self._settings()
+        self.materials = self._materials()
+        self.geometry = self._geometry()
+        self.tallies = self._tallies()
+        self.plots = self._plots()
+        model = openmc.model.Model(self.geometry,
+                                   self.materials,
+                                   self.settings,
+                                   self.tallies,
+                                   self.plots)
         if xml_export:
             model.export_to_xml()
         return model
