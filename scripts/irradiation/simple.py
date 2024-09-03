@@ -84,7 +84,7 @@ class IrradSimple:
         settings.run_mode = self.run_mode
         settings.seed = self.seed
 
-        source = openmc.Source()
+        source = openmc.IndependentSource()
         source.energy = openmc.stats.Uniform(self.n_energy, self.n_energy)
         source.space = openmc.stats.spherical_uniform(r_outer=self.r_outer)
         source.angle = openmc.stats.Isotropic()
@@ -104,13 +104,12 @@ class IrradSimple:
         """
         sample = openmc.Material()# Define the geometry
         sample.name = 'sample'
-        sample.add_nuclide(self.sample_nuc)
-        sample.density = self.sample_dens
-        sample.density_units = 'g/cm3'
+        sample.add_nuclide(self.sample_nuc, 100)
+        sample.set_density('g/cc', self.sample_dens)
         sample.depletable = True
         sample.volume = self.vol
 
-        materials = openmc.Materials([sample], 100)
+        materials = openmc.Materials([sample])
         return materials
     
     def _geometry(self):
@@ -171,4 +170,31 @@ class IrradSimple:
 
 
 if __name__ == "__main__":
-    pass
+    t_incore_s = 10
+    t_excore_s = 10
+    n_MeV = 0.0253 * 1e-6
+    S_rate_per_s = 1e10
+    batches = 10
+    inactive = 5
+    output_path = './results'
+    nps = 1000
+    photon_bool = False
+    run_mode = 'fixed source'
+    temperature_K = 298.15
+    fissile_nuc = 'U235'
+    dens_g_cc = 10
+
+    irrad = IrradSimple(t_incore_s=t_incore_s,
+                        t_excore_s=t_excore_s,
+                        n_MeV=n_MeV,
+                        S_rate_per_s=S_rate_per_s,
+                        batches=batches,
+                        inactive=inactive,
+                        output_path=output_path,
+                        nps=nps,
+                        photon_bool=photon_bool,
+                        run_mode=run_mode,
+                        temperature_K=temperature_K,
+                        fissile_nuc=fissile_nuc,
+                        dens_g_cc=dens_g_cc)
+    model = irrad.build_model(xml_export=False)
