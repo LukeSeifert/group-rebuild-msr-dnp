@@ -14,55 +14,52 @@ class IrradSimple:
       irradiation. 
     """
 
-    def __init__(self, t_incore_s: float, t_excore_s: float, n_MeV: float,
-                 S_rate_per_s: float, batches: int,
-                 output_path: str, nps: float, photon_bool: bool,
-                 run_mode: str, temperature_K: float, fissile_nuc: str,
-                 dens_g_cc: float, chain: str):
+    def __init__(self, data_dict: dict):
         """
 
         Parameters
         ----------
-        t_incore_s : float
-            The amount of time the fuel sample spends in core
-        t_excore_s : float
-            The amount of time the fuel sample spends out of the core
-        n_MeV : float
-            Neutron irradiation energy
-        S_rate_per_s : float
-            Irradiation source rate
-        batches : int
-            Number of batches to use in OpenMC
-        output_path : str
-            Path to write OpenMC output
-        nps : float
-            Number of particles to use in OpenMC simulation each batch
-        photon_bool : bool
-            If True, include photons
-        run_mode : str
-            OpenMC run mode (fixed source, plot are the relevant ones here)
-        temperature_K : float
-            Temperature of sample
-        fissile_nuc : str
-            Fissile nuclide of which sample is composed
-        dens_g_cc : float
-            Density of the sample in grams per cubic centimeter
-        chain : str
-            Path to chain xml file
+        data_dict : dict
+            t_incore_s : float
+                The amount of time the fuel sample spends in core
+            t_excore_s : float
+                The amount of time the fuel sample spends out of the core
+            n_MeV : float
+                Neutron irradiation energy
+            S_rate_per_s : float
+                Irradiation source rate
+            batches : int
+                Number of batches to use in OpenMC
+            output_path : str
+                Path to write OpenMC output
+            nps : float
+                Number of particles to use in OpenMC simulation each batch
+            photon_bool : bool
+                If True, include photons
+            run_mode : str
+                OpenMC run mode (fixed source, plot are the relevant ones here)
+            temperature_K : float
+                Temperature of sample
+            fissile_nuc : str
+                Fissile nuclide of which sample is composed
+            dens_g_cc : float
+                Density of the sample in grams per cubic centimeter
+            chain : str
+                Path to chain xml file
         """
-        self.t_incore = t_incore_s
-        self.t_excore = t_excore_s
-        self.n_energy = n_MeV
-        self.S_rate = S_rate_per_s
-        self.batches = batches
-        self.output_path = output_path
-        self.nps = nps
-        self.photons = photon_bool
-        self.run_mode = run_mode #eigenvalue', 'fixed source', 'plot', 'volume', 'particle restart'
-        self.temperature = temperature_K
-        self.sample_nuc = fissile_nuc
-        self.sample_dens = dens_g_cc
-        self.chain = chain
+        self.t_incore = data_dict['t_incore_s']
+        self.t_excore = data_dict['t_excore_s']
+        self.n_energy = data_dict['n_MeV']
+        self.S_rate = data_dict['S_rate_per_s']
+        self.batches = data_dict['batches']
+        self.output_path = data_dict['output_path']
+        self.nps = data_dict['nps']
+        self.photons = data_dict['photon_bool']
+        self.run_mode = data_dict['run_mode'] #eigenvalue', 'fixed source', 'plot', 'volume', 'particle restart'
+        self.temperature = data_dict['temperature_K']
+        self.sample_nuc = data_dict['fissile_nuc']
+        self.sample_dens = data_dict['dens_g_cc']
+        self.chain = data_dict['chain']
 
         self.r_outer = 10
         self.vol = 3
@@ -246,6 +243,7 @@ class IrradSimple:
         Irradiate the sample
 
         """
+        self.build_model()
         coupled_operator = openmc.deplete.CoupledOperator(self.model,
                                                           chain_file=self.chain,
                                                           normalization_mode='source-rate')
@@ -323,34 +321,9 @@ class IrradSimple:
 
 
 if __name__ == "__main__":
-    t_incore_s = 10
-    t_excore_s = 10
-    n_MeV = 0.0253 * 1e-6
-    S_rate_per_s = 1e10
-    batches = 10
-    output_path = './results'
-    nps = 1000
-    photon_bool = False
-    run_mode = 'fixed source'
-    temperature_K = 298.15
-    fissile_nuc = 'U235'
-    dens_g_cc = 10
-    chain = '../../data/chain/chain_casl_pwr.xml'
+    import ui
 
-    irrad = IrradSimple(t_incore_s=t_incore_s,
-                        t_excore_s=t_excore_s,
-                        n_MeV=n_MeV,
-                        S_rate_per_s=S_rate_per_s,
-                        batches=batches,
-                        output_path=output_path,
-                        nps=nps,
-                        photon_bool=photon_bool,
-                        run_mode=run_mode,
-                        temperature_K=temperature_K,
-                        fissile_nuc=fissile_nuc,
-                        dens_g_cc=dens_g_cc,
-                        chain=chain)
-    #model = irrad.build_model(xml_export=False)
+    irrad = IrradSimple(data_dict=ui.base_case_data)
     #irrad.irradiate()
     irrad.collect_concentrations()
     irrad.collect_fissions()
