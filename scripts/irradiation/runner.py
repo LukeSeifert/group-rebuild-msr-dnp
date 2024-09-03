@@ -16,7 +16,7 @@ class Run:
         return
     
     def _simple_run(self, simple_irrad_obj, version):
-        if self.run_omc():
+        if self.run_omc:
             simple_irrad_obj.irradiate()
         concs = simple_irrad_obj.collect_concentrations()
         fisses = simple_irrad_obj.collect_fissions()
@@ -32,6 +32,9 @@ class Run:
         """
         for simple_irrad_obj in args:
             self._simple_run(simple_irrad_obj, version='flowing')
+        
+        if self.analyze:
+            pass
         return
 
 
@@ -39,3 +42,8 @@ class Run:
 
 if __name__ == "__main__":
     import ui
+    runner = Run(True, False)
+    flowing = IrradSimple(data_dict=ui.base_case_data)
+    static = IrradSimple(data_dict=ui.static_data)
+    runner.simple_compare(flowing,
+                          static)
