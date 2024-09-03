@@ -10,7 +10,42 @@ class IrradSimple:
       irradiation. 
     """
 
-    def __init__(self, t_incore_s: float):
+    def __init__(self, t_incore_s: float, t_excore_s: float, n_MeV: float,
+                 S_rate_per_s: float, batches: int, inactive: int,
+                 output_path: str, nps: float, photon_bool: bool,
+                 run_mode: str, temperature_K: float, fissile_nuc: str,
+                 dens_g_cc: float):
+        """
+
+        Parameters
+        ----------
+        t_incore_s : float
+            The amount of time the fuel sample spends in core
+        t_excore_s : float
+            The amount of time the fuel sample spends out of the core
+        n_MeV : float
+            Neutron irradiation energy
+        S_rate_per_s : float
+            Irradiation source rate
+        batches : int
+            Number of batches to use in OpenMC
+        inactive : int
+            Number of inactive batches
+        output_path : str
+            Path to write OpenMC output
+        nps : float
+            Number of particles to use in OpenMC simulation each batch
+        photon_bool : bool
+            If True, include photons
+        run_mode : str
+            OpenMC run mode (fixed source, plot are the relevant ones here)
+        temperature_K : float
+            Temperature of sample
+        fissile_nuc : str
+            Fissile nuclide of which sample is composed
+        dens_g_cc : float
+            Density of the sample in grams per cubic centimeter
+        """
         self.t_incore = t_incore_s
         self.t_excore = t_excore_s
         self.n_energy = n_MeV
@@ -21,13 +56,13 @@ class IrradSimple:
         self.nps = nps
         self.photons = photon_bool
         self.run_mode = run_mode #eigenvalue', 'fixed source', 'plot', 'volume', 'particle restart'
-        self.seed = 1
         self.temperature = temperature_K
         self.sample_nuc = fissile_nuc
         self.sample_dens = dens_g_cc
 
         self.r_outer = 10
         self.vol = 3
+        self.seed = 1
         return
     
     def _settings(self):
@@ -133,16 +168,6 @@ class IrradSimple:
         if xml_export:
             model.export_to_xml()
         return model
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
