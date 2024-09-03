@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 
+nuc_list = ['Xe135']
+
 name = 'flowing'
 base_case_data = {
 'name': name,
