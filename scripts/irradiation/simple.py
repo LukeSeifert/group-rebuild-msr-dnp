@@ -1,6 +1,8 @@
 import openmc
 import openmc.deplete
 import numpy as np
+import shutil
+import glob
 
 class IrradSimple:
     """
@@ -64,7 +66,18 @@ class IrradSimple:
         self.r_outer = 10
         self.vol = 3
         self.seed = 1
-        self.net_irrad_time_s = 5 * 60
+        self.net_irrad_time_s = 20 #5 * 60
+
+        self._get_data()
+        return
+    
+    def _get_data(self):
+        """
+        Generate data for use in other methods
+
+        """
+        xs_library = openmc.data.DataLibrary.from_xml('/home/luke/projects/cross-section-libraries/endfb-viii.0-hdf5/cross_sections.xml')
+        self.xs_nuclide_list = [i['materials'][0] for i in xs_library.libraries][0:556]
         return
     
     def _settings(self):
@@ -132,8 +145,22 @@ class IrradSimple:
         return geometry
     
     def _tallies(self):
-        tallies = None
-        return tallies
+        tallies_file = openmc.Tallies()
+
+        mesh = openmc.RegularMesh()
+        mesh.dimension = [1, 1, 1]
+        mesh.lower_left = np.array([-self.r_outer, -self.r_outer, -self.r_outer])
+        mesh.upper_right = np.array([self.r_outer, self.r_outer, self.r_outer])
+        mesh_filter = openmc.MeshFilter(mesh)
+
+        # Net Fissions tally
+        fission_tally = openmc.Tally(name='fissions')
+        fission_tally.filters = [mesh_filter]
+        fission_tally.scores = ['fission']
+        fission_tally.multiply_density = True
+        fission_tally.nuclides = self.xs_nuclide_list
+        tallies_file.append(fission_tally)
+        return tallies_file
     
     def build_model(self, xml_export=False):
 
@@ -158,12 +185,24 @@ class IrradSimple:
         self.tallies = self._tallies()
         model = openmc.model.Model(self.geometry,
                                    self.materials,
-                                   self.settings)#,
-                                   #self.tallies)
+                                   self.settings,
+                                   self.tallies)
         if xml_export:
             model.export_to_xml()
         self.model = model
         return model
+    
+    def _cleanup(self):
+        """
+        Moves h5 and xml files into the output path
+        """
+        xml_files = glob.glob('./*.xml')
+        for file in xml_files:
+            shutil.move(file, self.output_path)
+        h5_files = glob.glob('./*.h5')
+        for file in h5_files:
+            shutil.move(file, self.output_path)
+        return
         
     def _get_times_rates(self):
         """
@@ -182,7 +221,7 @@ class IrradSimple:
             timesteps.append(t)
             source_rates.append(s)
             cur_t += t
-            if cur_t > net_t:
+            if cur_t >= net_t:
                 break_condition = True
             return break_condition, cur_t
 
@@ -214,6 +253,7 @@ class IrradSimple:
                                                         source_rates=source_rates,
                                                         timestep_units='s')
         integrator.integrate()
+        self._cleanup()
         return
 
 
