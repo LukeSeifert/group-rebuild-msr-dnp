@@ -74,7 +74,7 @@ class IrradSimple:
             self.seed = 1
             self.fiss_tally_name = 'fission-rate'
 
-        self._get_data()
+        _ = self._get_data()
         return
     
     def _format_nucs_iaea_to_omc(self, nuc_info):
@@ -124,8 +124,8 @@ class IrradSimple:
         """
         xs_library = openmc.data.DataLibrary.from_xml('/home/luke/projects/cross-section-libraries/endfb-viii.0-hdf5/cross_sections.xml')
         self.xs_nuclide_list = [i['materials'][0] for i in xs_library.libraries][0:556]
-        self._read_iaea_csv() # Generates self.iaea_nucs
-        return
+        iaea_data = self._read_iaea_csv()
+        return iaea_data
     
     def _settings(self):
         """
