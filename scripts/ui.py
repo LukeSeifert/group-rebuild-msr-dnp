@@ -18,9 +18,9 @@ default_path = f'./results/{default_name}'
 default_final_time = 5 * 60
 
 if default_energy < 300 * 1e-6:
-    default_chain = '../../data/chain/chain_endfb80_pwr.xml'
+    default_chain = '../data/chain/chain_endfb80_pwr.xml'
 else:
-    default_chain = '../../data/chain/chain_endfb80_sfr.xml'
+    default_chain = '../data/chain/chain_endfb80_sfr.xml'
 
 
 

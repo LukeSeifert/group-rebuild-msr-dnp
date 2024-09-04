@@ -95,7 +95,7 @@ class IrradSimple:
         Data from https://www-nds.iaea.org/relnsd/delayedn/delayedn.html
         Download CSV evaluation and do not change
         """
-        dataframe = pd.read_csv(f'../../data/eval.csv',
+        dataframe = pd.read_csv(f'../data/eval.csv',
                                 skiprows=1, header=0)
         self.iaea_nucs = dataframe['nucid']
         metastable = dataframe[' liso']
