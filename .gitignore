@@ -164,3 +164,7 @@ cython_debug/
 # OpenMC
 *.xml
 *.h5
+
+# Scripts
+*.csv
+*.png
