@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 import scipy as sp
+import pandas as pd
 
 class Run:
     """
@@ -11,7 +12,7 @@ class Run:
 
     """
 
-    def __init__(self, nuc_list: list, run_omc: bool = False, analyze: bool = False):
+    def __init__(self, nuc_list: list, run_omc: bool = False):
         """
 
         Parameters
@@ -20,11 +21,8 @@ class Run:
             List of nuclides to analyze
         run_omc : bool, optional
             Run OpenMC irradiation simulation, by default False
-        analyze : bool, optional
-            Run analysis of results, by default False
         """
         self.run_omc = run_omc
-        self.analyze = analyze
         self.nuc_list = nuc_list
         self.metadict = dict()
         self.metadict['conc'] = dict()
@@ -37,7 +35,7 @@ class Run:
         self.iaea_nucs = simple_irrad_obj.iaea_nucs
         return
     
-    def _simple_run(self, simple_irrad_obj):
+    def _simple_run(self, simple_irrad_obj: IrradSimple):
         if self.run_omc:
             simple_irrad_obj.irradiate()
         concs, times = simple_irrad_obj.collect_concentrations()
@@ -72,7 +70,6 @@ class Run:
     def _delnu_analysis(self):
         for vi, version in enumerate(self.metadict['fiss'].keys()):
             delnu = self.metadict['delnu'][version]['net'] / self.avg_fiss_rate[version]
-            formatted_delnus = [f"{abs(i):.3E}" for i in delnu]
             avg_delnu = np.average(delnu)
             print(version)
             print(f'     {avg_delnu=:.3E}')
@@ -153,11 +150,10 @@ class Run:
             self._simple_run(simple_irrad_obj) 
             self.irrad_objs.append(simple_irrad_obj)
 
-        if self.analyze:
-            self._fission_analysis()
-            self._delnu_analysis()
-            self._nuc_compare()
-            self._find_max_nuc_diff()
+        self._fission_analysis()
+        self._delnu_analysis()
+        self._nuc_compare()
+        self._find_max_nuc_diff()
 
 
         return
@@ -180,6 +176,31 @@ class Run:
                 plt.savefig(f'./images/{nuc}_conc.png')
             plt.close()
         return
+    
+    def write_concentrations(self, simple_irrad_obj: IrradSimple):
+        """
+        Write the concentrations from the irradiation to a csv file.
+        Number of nuclides pre-pruning: 3820
+        Number after removing 0's: 1524
+        Number after requiring nuc be in iaea nuc list: 309
+
+        Parameters
+        ----------
+        simple_irrad_obj : IrradSimple
+            Simple irradiation object
+        """
+        # Only non-zero and in iaea nucs
+        version = simple_irrad_obj.name
+        outpath = simple_irrad_obj.output_path
+        self._simple_run(simple_irrad_obj)
+        concs = self.metadict['conc'][version]
+        final_values = {key: values[-1] for key, values in concs.items() if values[-1] > 0.0 and key in self.iaea_nucs}
+        df = pd.DataFrame.from_dict(final_values, orient='index')
+        output_csv_file = f'{outpath}/concs.csv'
+        df.to_csv(output_csv_file, header=False)
+        return
+
+
 
 
 
@@ -188,9 +209,11 @@ class Run:
 if __name__ == "__main__":
     import ui
     runner = Run(ui.nuc_list,
-                 run_omc=False,
-                 analyze=True)
+                 run_omc=False)
     flowing = IrradSimple(data_dict=ui.base_case_data)
     static = IrradSimple(data_dict=ui.static_data)
-    runner.simple_compare(flowing,
-                          static)
+    pulse = IrradSimple(data_dict=ui.pulse_data)
+    #runner.simple_compare(flowing,
+    #                      static,
+    #                      pulse)
+    runner.write_concentrations(flowing)
