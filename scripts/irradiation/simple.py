@@ -49,38 +49,40 @@ class IrradSimple:
             chain : str
                 Path to chain xml file
         """
-        self.t_incore = data_dict['t_incore_s']
-        self.t_excore = data_dict['t_excore_s']
-        self.n_energy = data_dict['n_MeV']
-        self.S_rate = data_dict['S_rate_per_s']
-        self.batches = data_dict['batches']
-        self.output_path = data_dict['output_path']
-        self.nps = data_dict['nps']
-        self.photons = data_dict['photon_bool']
-        self.run_mode = data_dict['run_mode'] #eigenvalue', 'fixed source', 'plot', 'volume', 'particle restart'
-        self.temperature = data_dict['temperature_K']
-        self.sample_nuc = data_dict['fissile_nuc']
-        self.sample_dens = data_dict['dens_g_cc']
-        self.chain = data_dict['chain']
-        self.name = data_dict['name']
+        if type(data_dict) is not type(None):
+            self.t_incore = data_dict['t_incore_s']
+            self.t_excore = data_dict['t_excore_s']
+            self.n_energy = data_dict['n_MeV']
+            self.S_rate = data_dict['S_rate_per_s']
+            self.batches = data_dict['batches']
+            self.output_path = data_dict['output_path']
+            self.nps = data_dict['nps']
+            self.photons = data_dict['photon_bool']
+            self.run_mode = data_dict['run_mode'] #eigenvalue', 'fixed source', 'plot', 'volume', 'particle restart'
+            self.temperature = data_dict['temperature_K']
+            self.sample_nuc = data_dict['fissile_nuc']
+            self.sample_dens = data_dict['dens_g_cc']
+            self.chain = data_dict['chain']
+            self.name = data_dict['name']
 
-        self.r_outer = 10
-        self.vol = 3
-        self.seed = 1
-        self.net_irrad_time_s = 30 #5 * 60
-        self.fiss_tally_name = 'fission-rate'
+            # 3 gram spherical sample
+            self.vol = 3 / self.sample_dens
+            self.r_outer = (3 * self.vol / (4 * np.pi)) ** (1/3)
+            self.seed = 10
+            self.net_irrad_time_s = 5 * 60
+            self.fiss_tally_name = 'fission-rate'
 
         self._get_data()
         return
     
-    def _format_nucs_iaea_to_janis(self, nuc_info):
+    def _format_nucs_iaea_to_omc(self, nuc_info):
         """
         Converts from 14BE to Be14
         """
         digits = ''.join(filter(str.isdigit, nuc_info[0]))
         letters = ''.join(filter(str.isalpha, nuc_info[0])) 
         if nuc_info[1] > 0:
-            metastable = nuc_info[1] * 'm'
+            metastable = f'_m{nuc_info[1]}'
         else:
             metastable = -nuc_info[1] * 'negm'
         return letters.capitalize() + digits + metastable
@@ -96,7 +98,7 @@ class IrradSimple:
         self.iaea_nucs = dataframe['nucid']
         metastable = dataframe[' liso']
         nuc_info = zip(self.iaea_nucs, metastable)
-        self.iaea_nucs = [self._format_nucs_iaea_to_janis(i) for i in nuc_info]
+        self.iaea_nucs = [self._format_nucs_iaea_to_omc(i) for i in nuc_info]
         dataframe['nucid'] = self.iaea_nucs
         return dataframe
     
@@ -210,7 +212,7 @@ class IrradSimple:
         delnu_tally.filters = [mesh_filter]
         delnu_tally.scores = ['delayed-nu-fission']
         delnu_tally.multiply_density = True
-        delnu_tally.nuclides = list(set(self.xs_nuclide_list + self.iaea_nucs))
+        delnu_tally.nuclides = list(set(self.xs_nuclide_list))# + self.iaea_nucs))
         tallies_file.append(delnu_tally)
 
         return tallies_file
@@ -306,7 +308,10 @@ class IrradSimple:
                                                         timesteps=timesteps,
                                                         source_rates=source_rates,
                                                         timestep_units='s')
+        start = time.time()
         integrator.integrate()
+        end = time.time()
+        print(f'Took {round(end-start, 3)} s')
         self._cleanup()
         return
 
@@ -333,6 +338,19 @@ class IrradSimple:
                                             nuc=nuc)
             concs[nuc] = nuc_conc
         return concs, self.times
+    
+    def collect_delnu(self):
+        delnu = dict()
+        for i in range(len(self.times)):
+            sp = openmc.StatePoint(f'{self.output_path}/openmc_simulation_n{i}.h5')
+            for tally in sp.tallies.keys():
+                tally_data = sp.get_tally(id=tally)
+                if 'delnu' in tally_data.name:
+                    df = tally_data.get_pandas_dataframe(filters=False, scores=False, derivative=False, paths=False)
+                    df_sorted = df.sort_values(by='mean', ascending=False)
+                    df_sorted = df_sorted.reset_index(drop=True)
+                    input(df_sorted)
+        return
     
     def collect_fissions(self, print_fiss=False):
         """
@@ -380,6 +398,7 @@ if __name__ == "__main__":
     import ui
 
     irrad = IrradSimple(data_dict=ui.static_data)
-    irrad.irradiate()
+    #irrad.irradiate()
     irrad.collect_concentrations()
-    irrad.collect_fissions()
+    #irrad.collect_fissions()
+    irrad.collect_delnu()
