@@ -48,6 +48,8 @@ class IrradSimple:
                 Density of the sample in grams per cubic centimeter
             chain : str
                 Path to chain xml file
+            final_time : float
+                Time at which irradiation stops
         """
         if type(data_dict) is not type(None):
             self.t_incore = data_dict['t_incore_s']
@@ -64,12 +66,12 @@ class IrradSimple:
             self.sample_dens = data_dict['dens_g_cc']
             self.chain = data_dict['chain']
             self.name = data_dict['name']
+            self.net_irrad_time_s = data_dict['final_time']
 
             # 3 gram spherical sample
             self.vol = 3 / self.sample_dens
             self.r_outer = (3 * self.vol / (4 * np.pi)) ** (1/3)
-            self.seed = 10
-            self.net_irrad_time_s = 5 * 60
+            self.seed = 1
             self.fiss_tally_name = 'fission-rate'
 
         self._get_data()
@@ -347,10 +349,26 @@ class IrradSimple:
                 tally_data = sp.get_tally(id=tally)
                 if 'delnu' in tally_data.name:
                     df = tally_data.get_pandas_dataframe(filters=False, scores=False, derivative=False, paths=False)
+                    try:
+                        df['mean'] = df['mean'] * self.S_rate
+                    except KeyError:
+                        continue
                     df_sorted = df.sort_values(by='mean', ascending=False)
                     df_sorted = df_sorted.reset_index(drop=True)
-                    input(df_sorted)
-        return
+
+                    if i == 0:
+                        for nuc in df_sorted['nuclide']:
+                            delnu[nuc] = np.zeros(len(self.times))
+                        delnu['net'] = np.zeros(len(self.times))
+                    for nuc_i, nuc in enumerate(df_sorted['nuclide']):
+                        delnu[nuc][i] = df_sorted['mean'][nuc_i]
+                        delnu['net'][i] += delnu[nuc][i]
+
+        fiss_keys = list(delnu.keys())
+        for nuc in fiss_keys:
+            if np.all(delnu[nuc] <= 1e-12 * np.ones(len(self.times))):
+                del delnu[nuc]
+        return delnu
     
     def collect_fissions(self, print_fiss=False):
         """
@@ -397,8 +415,8 @@ class IrradSimple:
 if __name__ == "__main__":
     import ui
 
-    irrad = IrradSimple(data_dict=ui.static_data)
-    #irrad.irradiate()
+    irrad = IrradSimple(data_dict=ui.pulse_data)
+    irrad.irradiate()
     irrad.collect_concentrations()
-    #irrad.collect_fissions()
+    irrad.collect_fissions()
     irrad.collect_delnu()
