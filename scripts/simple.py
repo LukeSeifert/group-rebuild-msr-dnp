@@ -416,7 +416,7 @@ if __name__ == "__main__":
     import ui
 
     irrad = IrradSimple(data_dict=ui.pulse_data)
-    irrad.irradiate()
+    #irrad.irradiate()
     irrad.collect_concentrations()
     irrad.collect_fissions()
     irrad.collect_delnu()
