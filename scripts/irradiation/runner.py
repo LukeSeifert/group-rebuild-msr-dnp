@@ -30,6 +30,10 @@ class Run:
         self.metadict['conc'] = dict()
         self.metadict['fiss'] = dict()
         self.metadict['times'] = dict()
+
+        simple_irrad_obj = IrradSimple(None)
+        simple_irrad_obj._get_data()
+        self.iaea_nucs = simple_irrad_obj.iaea_nucs
         return
     
     def _simple_run(self, simple_irrad_obj):
@@ -101,14 +105,20 @@ class Run:
         concs_sorted = list(concs_sorted)
         diffs_sorted = list(diffs_sorted)
 
-        print(f'Displaying top {top_nucs} concentration % diffs')
+        print(f'Top {top_nucs} concentration % diffs')
         for i in range(top_nucs):
             first = concs_sorted[i][0]
             pcnt_diff_vec = [100 * (i - first) / first for i in concs_sorted[i]]
-            formatted_diffs = [f"{abs(diff):.3E}" for diff in pcnt_diff_vec]
+            formatted_diffs = [f"{abs(diff):.3E}" for diff in pcnt_diff_vec[1:]]
             print(f'     {nucs_sorted[i]}: {formatted_diffs}')
 
-        # TODO - use IAEA nucs and check which DNPs are most impacted
+        print(f'Top {top_nucs} DNP concentration % diffs')
+        for i in range(top_nucs):
+            if nucs_sorted[i] in self.iaea_nucs:
+                first = concs_sorted[i][0]
+                pcnt_diff_vec = [100 * (i - first) / first for i in concs_sorted[i]]
+                formatted_diffs = [f"{abs(diff):.3E}" for diff in pcnt_diff_vec[1:]]
+                print(f'     {nucs_sorted[i]}: {formatted_diffs}')
 
         return sorted_zipped_lists
 
