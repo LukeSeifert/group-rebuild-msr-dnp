@@ -52,10 +52,10 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
     return data
 
 base_case_data = dict_builder(name='flowing', incore_t=10, excore_t=10)
-static_data = dict_builder(name='static', incore_t=20, excore_t=0,
+static_data = dict_builder(name='static', incore_t=10*2, excore_t=0,
                            S_rate_per_s=default_source/2)
 pulse_data = dict_builder(name='pulse', incore_t=0.25, excore_t=0,
-                          final_time=0.25)
+                          final_time=0.25, S_rate_per_s=default_source*40)
 
 
 
