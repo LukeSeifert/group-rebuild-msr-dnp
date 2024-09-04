@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 
 nuc_list = ['Xe135']
 
-default_batches = 100
-default_nps = 1000
+default_batches = 10
+default_nps = 100
 default_source = 1e10
 default_temperature = 298.15
 default_energy = 0.0253 * 1e-6
@@ -11,11 +11,17 @@ default_photons = False
 default_run_mode = 'fixed source'
 default_fissile = 'U235'
 default_dens = 10
-default_chain = '../../data/chain/chain_casl_pwr.xml'
 default_incore_t = 4
 default_excore_t = 4
 default_name = 'default'
 default_path = f'./results/{default_name}'
+
+if default_energy < 300 * 1e-6:
+    default_chain = '../../data/chain/chain_endfb80_pwr.xml'
+else:
+    default_chain = '../../data/chain/chain_endfb80_sfr.xml'
+
+
 
 
 def dict_builder(name=default_name, incore_t=default_incore_t,
