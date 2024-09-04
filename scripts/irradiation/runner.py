@@ -58,6 +58,59 @@ class Run:
             print(f'     {avg_fiss_rate=:.3E}')
             print(f'     {net_fiss=:.3E}')
         return
+    
+    def _find_max_nuc_diff(self):
+        """
+        Find the largest nuclide concentration difference at the final timestep
+        (max L2 norm between all from first `IrradSimple` object).
+
+        Returns
+        -------
+        max_norm_nuc : str
+            Name of nuclide which holds largest norm
+        max_norm : float
+            Maximum norm of final concentration vector for each version 
+        """
+        versions = self.metadict['conc'].keys()
+        nucs = list()
+        concs = list()
+        diffs = list()
+        for version in versions:
+            nucs += list(self.metadict['conc'][version].keys())
+        nucs = list(set(nucs))
+        top_nucs = 10
+
+        for nuc in nucs:
+            conc_vector = list()
+            for version in versions:
+                conc = self.metadict['conc'][version][nuc][-1]
+                conc_vector.append(conc)
+            conc_vector = np.asarray(conc_vector)
+            first_element = conc_vector[0]
+            percent_differences = 0.0
+            if first_element > 0.0:
+                percent_differences = 100 * (conc_vector - first_element) / first_element
+            diff_norm = np.linalg.norm(percent_differences)
+            concs.append(conc_vector)
+            diffs.append(diff_norm)
+
+        zipped_lists = list(zip(nucs, concs, diffs))
+        sorted_zipped_lists = sorted(zipped_lists, key=lambda x: x[2], reverse=True)
+        nucs_sorted, concs_sorted, diffs_sorted = zip(*sorted_zipped_lists)
+        nucs_sorted = list(nucs_sorted)
+        concs_sorted = list(concs_sorted)
+        diffs_sorted = list(diffs_sorted)
+
+        print(f'Displaying top {top_nucs} concentration % diffs')
+        for i in range(top_nucs):
+            first = concs_sorted[i][0]
+            pcnt_diff_vec = [100 * (i - first) / first for i in concs_sorted[i]]
+            formatted_diffs = [f"{abs(diff):.3E}" for diff in pcnt_diff_vec]
+            print(f'     {nucs_sorted[i]}: {formatted_diffs}')
+
+        # TODO - use IAEA nucs and check which DNPs are most impacted
+
+        return sorted_zipped_lists
 
     
     def simple_compare(self, *args):
@@ -73,6 +126,7 @@ class Run:
         if self.analyze:
             self._fission_analysis()
             self._nuc_compare()
+            self._find_max_nuc_diff()
 
 
         return
@@ -103,7 +157,7 @@ class Run:
 if __name__ == "__main__":
     import ui
     runner = Run(ui.nuc_list,
-                 run_omc=True,
+                 run_omc=False,
                  analyze=True)
     flowing = IrradSimple(data_dict=ui.base_case_data)
     static = IrradSimple(data_dict=ui.static_data)
