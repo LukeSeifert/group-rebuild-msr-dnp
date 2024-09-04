@@ -30,6 +30,7 @@ class Run:
         self.metadict['conc'] = dict()
         self.metadict['fiss'] = dict()
         self.metadict['times'] = dict()
+        self.metadict['delnu'] = dict()
 
         simple_irrad_obj = IrradSimple(None)
         simple_irrad_obj._get_data()
@@ -41,13 +42,16 @@ class Run:
             simple_irrad_obj.irradiate()
         concs, times = simple_irrad_obj.collect_concentrations()
         fisses = simple_irrad_obj.collect_fissions()
+        delnus = simple_irrad_obj.collect_delnu()
         version = simple_irrad_obj.name
         self.metadict['conc'][version] = concs
         self.metadict['fiss'][version] = fisses
         self.metadict['times'][version] = times
+        self.metadict['delnu'][version] = delnus
         return
     
     def _fission_analysis(self):
+        self.avg_fiss_rate = dict()
         for vi, version in enumerate(self.metadict['fiss'].keys()):
             fission_rates = self.metadict['fiss'][version]['net']
             times = self.metadict['times'][version]
@@ -55,13 +59,25 @@ class Run:
             target_nuc = self.irrad_objs[vi].sample_nuc
             target_fiss_rate = self.metadict['fiss'][version][target_nuc]
             target_fiss = sp.integrate.simpson(target_fiss_rate, x=times)
-            fiss_frac = target_fiss / fissions
+            fiss_frac_min = np.min(target_fiss / fissions)
             net_fiss = np.sum(fissions)
             avg_fiss_rate = net_fiss / times[-1]
+            self.avg_fiss_rate[version] = avg_fiss_rate
             print(version)
             print(f'     {avg_fiss_rate=:.3E}')
             print(f'     {net_fiss=:.3E}')
+            print(f'     {fiss_frac_min=:.3E}')
         return
+    
+    def _delnu_analysis(self):
+        for vi, version in enumerate(self.metadict['fiss'].keys()):
+            delnu = self.metadict['delnu'][version]['net'] / self.avg_fiss_rate[version]
+            formatted_delnus = [f"{abs(i):.3E}" for i in delnu]
+            avg_delnu = np.average(delnu)
+            print(version)
+            print(f'     {avg_delnu=:.3E}')
+        return
+
     
     def _find_max_nuc_diff(self):
         """
@@ -96,7 +112,8 @@ class Run:
                 percent_differences = 100 * (conc_vector - first_element) / first_element
             diff_norm = np.linalg.norm(percent_differences)
             concs.append(conc_vector)
-            diffs.append(diff_norm)
+            #diffs.append(diff_norm)
+            diffs.append(np.linalg.norm(conc_vector))
 
         zipped_lists = list(zip(nucs, concs, diffs))
         sorted_zipped_lists = sorted(zipped_lists, key=lambda x: x[2], reverse=True)
@@ -113,12 +130,15 @@ class Run:
             print(f'     {nucs_sorted[i]}: {formatted_diffs}')
 
         print(f'Top {top_nucs} DNP concentration % diffs')
-        for i in range(top_nucs):
+        j = 0
+        while j < top_nucs:
+            i += 1
             if nucs_sorted[i] in self.iaea_nucs:
                 first = concs_sorted[i][0]
                 pcnt_diff_vec = [100 * (i - first) / first for i in concs_sorted[i]]
                 formatted_diffs = [f"{abs(diff):.3E}" for diff in pcnt_diff_vec[1:]]
                 print(f'     {nucs_sorted[i]}: {formatted_diffs}')
+                j += 1
 
         return sorted_zipped_lists
 
@@ -135,6 +155,7 @@ class Run:
 
         if self.analyze:
             self._fission_analysis()
+            self._delnu_analysis()
             self._nuc_compare()
             self._find_max_nuc_diff()
 
