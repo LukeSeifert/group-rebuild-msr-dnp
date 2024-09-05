@@ -13,7 +13,7 @@ default_fissile = 'U235'
 default_dens = 10
 default_incore_t = 4
 default_excore_t = 4
-default_name = 'default'
+default_name = 'Default'
 default_path = f'./results/{default_name}'
 default_final_time = 5 * 60
 
@@ -51,10 +51,10 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
     }
     return data
 
-base_case_data = dict_builder(name='flowing', incore_t=10, excore_t=10)
-static_data = dict_builder(name='static', incore_t=10*2, excore_t=0,
+base_case_data = dict_builder(name='Flowing', incore_t=10, excore_t=10)
+static_data = dict_builder(name='Static', incore_t=10*2, excore_t=0,
                            S_rate_per_s=default_source/2)
-pulse_data = dict_builder(name='pulse', incore_t=10/10000, excore_t=0,
+pulse_data = dict_builder(name='Pulse', incore_t=10/10000, excore_t=0,
                           final_time=10/10000, S_rate_per_s=default_source*10000)
 
 
