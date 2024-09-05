@@ -69,10 +69,11 @@ class Run:
     
     def _delnu_analysis(self):
         for vi, version in enumerate(self.metadict['fiss'].keys()):
-            delnu = self.metadict['delnu'][version]['net'] / self.avg_fiss_rate[version]
-            avg_delnu = np.average(delnu)
+            delnu_data = self.metadict['delnu'][version]['net']
+            final_nonzero = [i for i in reversed(delnu_data) if i > 0][0]
+            delnu = final_nonzero / self.avg_fiss_rate[version]
             print(version)
-            print(f'     {avg_delnu=:.3E}')
+            print(f'     {delnu=:.3E}')
         return
 
     
@@ -138,7 +139,7 @@ class Run:
                 j += 1
 
         return sorted_zipped_lists
-
+    
     
     def simple_compare(self, *args):
         """
@@ -213,7 +214,9 @@ if __name__ == "__main__":
     flowing = IrradSimple(data_dict=ui.base_case_data)
     static = IrradSimple(data_dict=ui.static_data)
     pulse = IrradSimple(data_dict=ui.pulse_data)
-    #runner.simple_compare(flowing,
-    #                      static,
-    #                      pulse)
-    runner.write_concentrations(flowing)
+    runner.simple_compare(flowing,
+                          static,
+                          pulse)
+    #runner.write_concentrations(flowing)
+    #runner.write_concentrations(static)
+    #runner.write_concentrations(pulse)
