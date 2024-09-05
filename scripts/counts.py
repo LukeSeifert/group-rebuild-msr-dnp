@@ -25,11 +25,11 @@ class DelayedCounts:
         self.pns = dict()
         self.lams = dict()
         for i, nuc in enumerate(self.iaea_data['nucid']):
-            beta_prob = self.iaea_data['  beta- %'][i]
-            Pn1 = self.iaea_data[' pn1 % '][i]
-            Pn2 = self.iaea_data[' pn2 % '][i]
-            Pn3 = self.iaea_data[' pn3 % '][i]
-            prob_neutron = beta_prob/100 * (1*Pn1 + 2*Pn2 + 3*Pn3)
+            beta_prob = self.iaea_data['  beta- %'][i] / 100
+            Pn1 = self.iaea_data[' pn1 % '][i] / 100
+            Pn2 = self.iaea_data[' pn2 % '][i] / 100
+            Pn3 = self.iaea_data[' pn3 % '][i] / 100
+            prob_neutron = beta_prob * (1*Pn1 + 2*Pn2 + 3*Pn3)
             lam = self.iaea_data[' T1/2 [s] '][i]
             self.pns[nuc] = prob_neutron
             self.lams[nuc] = np.log(2) / lam 
@@ -68,20 +68,21 @@ class DelayedCounts:
         return self.times, counts
     
     def from_groups(self, yields: list, lams: list, fissions: float,
-                    irradiation_time: float=None):
+                    fission_rate: float=None):
         counts = list()
-        if type(irradiation_time) is type(None):
+
+        if type(fission_rate) is type(None):
             leading_term = fissions
             mult_term = [yields[i] * lams[i] for i in range(len(yields))]
         else:
-            leading_term = fissions / irradiation_time
+            leading_term = fission_rate
             mult_term = yields
         for t in self.times:
             run_count = 0
             for group in range(len(yields)):
                 run_count += mult_term[group] * np.exp(-lams[group] * t)
             counts.append(leading_term * run_count)
-        print(f'Group delnu: {round(sum(lams), 3)}')
+        print(f'Group delnu: {round(sum(yields), 4)}')
         return self.times, counts
     
     def get_delnu(self, fissions: float, counts: list, times: list):
@@ -139,24 +140,28 @@ class DelayedCounts:
     def run_counter(self, name: str, time_list: list, count_list: list,
                    name_list: list, fission_list: list, method: str,
                    **kwargs):
-
+        try:
+            fission_rate = kwargs['fission_rate']
+        except KeyError:
+            fission_rate = None
         if method == 'conc':
             csv_path = kwargs['csv_path']
             cutoff = kwargs['cutoff']
             times, delnu_counts = Count.from_concs(csv_path, cutoff_scale=cutoff)
         elif method == 'group':
-            try:
-                irradiation_time = kwargs['irradiation_time']
-            except KeyError:
-                irradiation_time = None
             times, delnu_counts = Count.from_groups(yields, lams, fissions,
-                                                    irradiation_time)
-        delnu = Count.get_delnu(fissions, delnu_counts, times)
-        print(f'{name=} {delnu=:.3E}\n')
+                                                    fission_rate)
+        if type(fission_rate) != type(None):
+            delnu = Count.get_delnu(fission_rate, delnu_counts, times)
+            fission_list.append(fission_rate)
+        else:
+            delnu = Count.get_delnu(fissions, delnu_counts, times)
+            fission_list.append(fissions)
+
+        print(f'(Only valid if pulse) {name=} {delnu=:.3E}\n')
         time_list.append(times)
         count_list.append(delnu_counts)
         name_list.append(name)
-        fission_list.append(fissions)
         return time_list, count_list, name_list, fission_list
 
 
@@ -175,9 +180,11 @@ if __name__ == "__main__":
     fission_list = list()
     Count = DelayedCounts(dt, tf)
 
-    name = 'static'
+    name = 'Static'
     csv_path = f'./results/{name}/concs.csv'
-    fissions = 1.287E12
+    avg_fiss_rate = 3.069E+13
+    net_fiss = 9.515E+15
+    fissions = avg_fiss_rate
     time_list, count_list, name_list, fission_list = Count.run_counter(name,
                                                                       time_list,
                                                                       count_list,
@@ -188,9 +195,11 @@ if __name__ == "__main__":
                                                                       fissions=fissions,
                                                                       cutoff=cutoff)
 
-    name = 'flowing'
+    name = 'Flowing'
     csv_path = f'./results/{name}/concs.csv'
-    fissions = 8.318E11
+    avg_fiss_rate=4.301E+13
+    net_fiss=1.376E+16
+    fissions = avg_fiss_rate
     time_list, count_list, name_list, fission_list = Count.run_counter(name,
                                                                       time_list,
                                                                       count_list,
@@ -201,40 +210,42 @@ if __name__ == "__main__":
                                                                       fissions=fissions,
                                                                       cutoff=cutoff)
 
-    name = 'pulse'
+    name = 'Pulse'
     csv_path = f'./results/{name}/concs.csv'
-    fissions = 8.610E10
-    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-                                                                      time_list,
-                                                                      count_list,
-                                                                      name_list, 
-                                                                      fission_list,
-                                                                      method='conc',
-                                                                      csv_path=csv_path,
-                                                                      fissions=fissions,
-                                                                      cutoff=cutoff)
+    avg_fiss_rate=8.725E+17
+    net_fiss=8.725E+14
+    fissions = net_fiss
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='conc',
+#                                                                      csv_path=csv_path,
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff)
 
     name = 'Keepin Fit (Pulse)'
     yields = [0.00063, 0.00351, 0.00310, 0.00672, 0.00211, 0.00043]
     hls = [54.51, 21.84, 6.00, 2.23, 0.496, 0.179]
     lams = [np.log(2)/hl for hl in hls]
-    fissions = 8.610E10 # pulse
-    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-                                                                      time_list,
-                                                                      count_list,
-                                                                      name_list, 
-                                                                      fission_list,
-                                                                      method='group',
-                                                                      csv_path=csv_path,
-                                                                      fissions=fissions,
-                                                                      cutoff=cutoff)
+    fissions = 1E16
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='group',
+#                                                                      csv_path=csv_path,
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff)
 
     name = 'Keepin Fit (Saturation)'
     yields = [0.00063, 0.00351, 0.00310, 0.00672, 0.00211, 0.00043]
     hls = [54.51, 21.84, 6.00, 2.23, 0.496, 0.179]
     lams = [np.log(2)/hl for hl in hls]
-    fissions = 1.287E12 # static
-    rad_time = 5 * 60
+    fissions = 3E13
+    fission_rate = 3E13
     time_list, count_list, name_list, fission_list = Count.run_counter(name,
                                                                       time_list,
                                                                       count_list,
@@ -244,7 +255,7 @@ if __name__ == "__main__":
                                                                       csv_path=csv_path,
                                                                       fissions=fissions,
                                                                       cutoff=cutoff,
-                                                                      irradiation_time=rad_time)
+                                                                      fission_rate=fission_rate)
     
 
 
