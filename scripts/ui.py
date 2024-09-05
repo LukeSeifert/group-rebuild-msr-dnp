@@ -4,7 +4,7 @@ nuc_list = ['Xe135', 'Br87', 'Kr100', 'I137', 'Cs141']
 
 default_batches = 10
 default_nps = 100
-default_source = 1e10
+default_source = 1e14
 default_temperature = 298.15
 default_energy = 0.0253 * 1e-6
 default_photons = False
@@ -54,8 +54,8 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
 base_case_data = dict_builder(name='flowing', incore_t=10, excore_t=10)
 static_data = dict_builder(name='static', incore_t=10*2, excore_t=0,
                            S_rate_per_s=default_source/2)
-pulse_data = dict_builder(name='pulse', incore_t=0.25, excore_t=0,
-                          final_time=0.25, S_rate_per_s=default_source*40)
+pulse_data = dict_builder(name='pulse', incore_t=10/10000, excore_t=0,
+                          final_time=10/10000, S_rate_per_s=default_source*10000)
 
 
 
