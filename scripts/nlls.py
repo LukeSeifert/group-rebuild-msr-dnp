@@ -1,8 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
 
-def gaussian(x, a, b, c):
-    return a * np.exp(-((x - b) ** 2) / (2 * c ** 2))
 
 class NNLS:
     """
@@ -22,6 +20,7 @@ class NNLS:
         self.counts = counts
         self.a_vals_fix = a_vals_fix
         self.lam_vals_fix = lam_vals_fix
+        self.fit_type = None
 
         return
     
@@ -44,21 +43,32 @@ class NNLS:
                 lam_vals[lami-self.num_groups] = vector_vals[lami]
         
         return a_vals, lam_vals
+
     
-    def _pulse_sat(self, t, *vector_vals: list):
+    def _group_summer(self, t, *vector_vals: list,
+                      kappa:int = 1, simpleflow: bool=False):
         group_sum = 0
         a_vals, lam_vals = self._apply_fixed_terms(vector_vals)
-        # a_vals will be (a*lam) for pulse
         for group in range(self.num_groups):
-            group_sum += (a_vals[group] * lam_vals[group] * np.exp(-lam_vals[group] * t))
+            if self.fit_type == 'pulse':
+                group_val = (a_vals[group] * lam_vals[group] * np.exp(-lam_vals[group] * t))
+            elif self.fit_type == 'saturation' or self.fit_type == 'simpleflow':
+                group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
+            eta_sum = 0
+            eta_sum = self._get_eta_sum(kappa, simpleflow, a_vals[group],
+                                          lam_vals[group])
+            group_sum += group_val * eta_sum
         delnu = self.efficiency * self.fission_term * group_sum
         return delnu
-    
+
     def group_fit(self, fit_type: str):
-        if fit_type == 'pulse' or fit_type == 'saturation':
-            func = self._pulse_sat
+        valid_types = ['pulse', 'saturation', 'simpleflow']
+        if fit_type in valid_types:
+            self.fit_type = fit_type
+            func = self._group_summer
+            self.fit_type = None
         else:
-            raise Exception(f'{fit_type=} not implemented')
+            raise Exception(f'{fit_type=} not in {valid_types=}')
         
         params, covariance = curve_fit(func, self.times, self.counts,
                                        p0=[1]*self.num_groups*2, maxfev=100000,
