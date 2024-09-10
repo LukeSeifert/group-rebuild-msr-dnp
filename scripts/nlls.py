@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
+from copy import deepcopy
 
 
 class NNLS:
@@ -21,27 +22,27 @@ class NNLS:
         self.a_vals_fix = a_vals_fix
         self.lam_vals_fix = lam_vals_fix
         self.fit_type = None
+        self.num_unknowns_a   = len([i for i in a_vals_fix if i is None])
+        self.num_unknowns_lam = len([i for i in lam_vals_fix if i is None])
+        self.num_unknowns = self.num_unknowns_a + self.num_unknowns_lam
 
         return
     
     def _apply_fixed_terms(self, vector_vals: list):
-        a_vals = np.zeros(self.num_groups)
-        lam_vals = np.zeros(self.num_groups)
+        a_vals = deepcopy(self.a_vals_fix)
+        lam_vals = deepcopy(self.lam_vals_fix)
+        vector_val_index = 0
 
-        for ai in range(self.num_groups):
-            a = self.a_vals_fix[ai]
-            if type(a) != type(None):
-                a_vals[ai] = a
-            else:
-                a_vals[ai] = vector_vals[ai]
+        for ai, a in enumerate(a_vals):
+            if type(a) == type(None):
+                a_vals[ai] = vector_vals[vector_val_index]
+                vector_val_index += 1
         
-        for lami in range(self.num_groups, self.num_groups*2):
-            lam = self.lam_vals_fix[lami-self.num_groups]
-            if type(lam) != type(None):
-                lam_vals[lami-self.num_groups] = lam
-            else:
-                lam_vals[lami-self.num_groups] = vector_vals[lami]
-        
+        for lami, lam in enumerate(lam_vals):
+            if type(lam) == type(None):
+                lam_vals[lami] = vector_vals[vector_val_index]
+                vector_val_index += 1
+
         return a_vals, lam_vals
 
     
@@ -68,15 +69,18 @@ class NNLS:
         adjusted_counts = [i / (self.fission_term * self.efficiency) for i in self.counts]
         
         params, covariance, info, _, _ = curve_fit(func, self.times, adjusted_counts,
-                                       p0=[1]*self.num_groups*2, maxfev=100000,
+                                       p0=[1]*self.num_unknowns, maxfev=100000,
                                        bounds=(0, 1e3), full_output=True,
                                        xtol=None, gtol=None,
                                        verbose=0)
 
         chi_squared = np.sum(info['fvec']**2)
         print(f'{chi_squared=}')
-        a_fits = params[:self.num_groups]
-        lam_fits = params[self.num_groups:]
+        a_fits = params[:self.num_unknowns_a].tolist()
+        lam_fits = params[self.num_unknowns_a:].tolist()
+
+        a_fits = a_fits + [i for i in self.a_vals_fix if i is not None]
+        lam_fits = lam_fits + [i for i in self.lam_vals_fix if i is not None]
 
         zipped = list(zip(a_fits, lam_fits))
         sorted_zipped = sorted(zipped, key=lambda x: x[1])
@@ -114,9 +118,11 @@ if __name__ == "__main__":
     times, counts = Count.from_groups(yields, lams, fissions)
     
     num_groups = 6
+    a_vals_fix = [None] * 6
+    lam_vals_fix = [None] * 6
     group = NNLS(groups=num_groups, efficiency=1, fission_term=fissions,
-                 times=times, counts=counts, a_vals_fix=[None]*num_groups,
-                 lam_vals_fix=[None]*num_groups)
+                 times=times, counts=counts, a_vals_fix=a_vals_fix,
+                 lam_vals_fix=lam_vals_fix)
     a_fits, lam_fits = group.group_fit('pulse')
     half_lives = [np.log(2)/lam for lam in lam_fits]
     tot_yield = sum(a_fits)
