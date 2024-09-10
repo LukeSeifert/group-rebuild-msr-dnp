@@ -38,15 +38,14 @@ class NNLS:
         for lami in range(self.num_groups, self.num_groups*2):
             lam = self.lam_vals_fix[lami-self.num_groups]
             if type(lam) != type(None):
-                lam_vals[lami] = lam
+                lam_vals[lami-self.num_groups] = lam
             else:
                 lam_vals[lami-self.num_groups] = vector_vals[lami]
         
         return a_vals, lam_vals
 
     
-    def _group_summer(self, t, *vector_vals: list,
-                      kappa:int = 1, simpleflow: bool=False):
+    def _group_summer(self, t, *vector_vals: list):
         group_sum = 0
         a_vals, lam_vals = self._apply_fixed_terms(vector_vals)
         for group in range(self.num_groups):
@@ -54,11 +53,8 @@ class NNLS:
                 group_val = (a_vals[group] * lam_vals[group] * np.exp(-lam_vals[group] * t))
             elif self.fit_type == 'saturation' or self.fit_type == 'simpleflow':
                 group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
-            eta_sum = 0
-            eta_sum = self._get_eta_sum(kappa, simpleflow, a_vals[group],
-                                          lam_vals[group])
-            group_sum += group_val * eta_sum
-        delnu = self.efficiency * self.fission_term * group_sum
+            group_sum += group_val
+        delnu = group_sum * self.efficiency * self.fission_term
         return delnu
 
     def group_fit(self, fit_type: str):
@@ -66,13 +62,14 @@ class NNLS:
         if fit_type in valid_types:
             self.fit_type = fit_type
             func = self._group_summer
-            self.fit_type = None
         else:
             raise Exception(f'{fit_type=} not in {valid_types=}')
         
-        params, covariance = curve_fit(func, self.times, self.counts,
+        params, covariance, info, _, _ = curve_fit(func, self.times, self.counts,
                                        p0=[1]*self.num_groups*2, maxfev=100000,
-                                       bounds=(0, 1e3))
+                                       bounds=(0, 1e3), full_output=True)
+        chi_squared = np.sum(info['fvec']**2)
+        print(f'{chi_squared=}')
         a_fits = params[:self.num_groups]
         lam_fits = params[self.num_groups:]
 
@@ -83,7 +80,10 @@ class NNLS:
         lam_fits = list(lam_fits_sorted)
 
         print(f'{np.linalg.cond(covariance)=}')
+        self.fit_type = None
         return a_fits, lam_fits
+
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -114,8 +114,50 @@ if __name__ == "__main__":
                  lam_vals_fix=[None]*num_groups)
     a_fits, lam_fits = group.group_fit('pulse')
     half_lives = [np.log(2)/lam for lam in lam_fits]
-    print(f'{np.round(a_fits, 5)  =}')
-    print(f'{np.round(lam_fits, 5)=}')
-    print(f'{np.round(half_lives, 5)=}')
+    tot_yield = sum(a_fits)
+    print(f'{name=}')
+    print(f'    {np.round(a_fits, 5)    =}')
+    print(f'    {np.round(tot_yield, 5) =}')
+    print(f'    {np.round(lam_fits, 5)  =}')
+    print(f'    {np.round(half_lives, 5)=}\n')
+
+
+    name = 'Static'
+    csv_path = f'./results/{name}/concs.csv'
+    avg_fiss_rate = 4.290E+13
+    fissions = avg_fiss_rate
+    times, counts = Count.from_concs(csv_path, cutoff_scale=1)
+    num_groups = 6
+    group = NNLS(groups=num_groups, efficiency=1, fission_term=fissions,
+                 times=times, counts=counts, a_vals_fix=[None]*num_groups,
+                 lam_vals_fix=[None]*num_groups)
+    a_fits, lam_fits = group.group_fit('saturation')
+    half_lives = [np.log(2)/lam for lam in lam_fits]
+    tot_yield = sum(a_fits)
+    print(f'{name=}')
+    print(f'    {np.round(a_fits, 5)    =}')
+    print(f'    {np.round(tot_yield, 5) =}')
+    print(f'    {np.round(lam_fits, 5)  =}')
+    print(f'    {np.round(half_lives, 5)=}\n')
+
+    name = 'Flowing'
+    csv_path = f'./results/{name}/concs.csv'
+    avg_fiss_rate = 4.222E+13
+    fissions = avg_fiss_rate
+    times, counts = Count.from_concs(csv_path, cutoff_scale=1)
+    num_groups = 6
+    a_vals_fix = [a_fits[0], a_fits[1]] + [None] * 4
+    lam_vals_fix = [lam_fits[0], lam_fits[1]] + [None] * 4
+    group = NNLS(groups=num_groups, efficiency=1, fission_term=fissions,
+                 times=times, counts=counts, a_vals_fix=a_vals_fix,
+                 lam_vals_fix=lam_vals_fix)
+    a_fits, lam_fits = group.group_fit('simpleflow')
+    half_lives = [np.log(2)/lam for lam in lam_fits]
+    tot_yield = sum(a_fits)
+    print(f'{name=}')
+    print(f'    {np.round(a_fits, 5)    =}')
+    print(f'    {np.round(tot_yield, 5) =}')
+    print(f'    {np.round(lam_fits, 5)  =}')
+    print(f'    {np.round(half_lives, 5)=}\n')
 
 
