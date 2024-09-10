@@ -53,18 +53,18 @@ class Run:
         for vi, version in enumerate(self.metadict['fiss'].keys()):
             fission_rates = self.metadict['fiss'][version]['net']
             times = self.metadict['times'][version]
-            fissions = sp.integrate.simpson(fission_rates, x=times)
+            fissions = np.sum(fission_rates[:-1] * np.diff(times))
             target_nuc = self.irrad_objs[vi].sample_nuc
             target_fiss_rate = self.metadict['fiss'][version][target_nuc]
-            target_fiss = sp.integrate.simpson(target_fiss_rate, x=times)
+            target_fiss = np.sum(target_fiss_rate[:-1] * np.diff(times))
             fiss_frac_min = np.min(target_fiss / fissions)
             net_fiss = np.sum(fissions)
             avg_fiss_rate = net_fiss / times[-1]
             self.avg_fiss_rate[version] = avg_fiss_rate
             print(version)
-            print(f'     {avg_fiss_rate=:.3E}')
-            print(f'     {net_fiss=:.3E}')
-            print(f'     {fiss_frac_min=:.3E}')
+            print(f'     {avg_fiss_rate = :.3E}')
+            print(f'     {net_fiss = :.3E}')
+            print(f'     {fiss_frac_min = :.3E}')
         return
     
     def _delnu_analysis(self):
@@ -108,10 +108,9 @@ class Run:
             percent_differences = 0.0
             if first_element > 0.0:
                 percent_differences = 100 * (conc_vector - first_element) / first_element
-            diff_norm = np.linalg.norm(percent_differences)
             concs.append(conc_vector)
-            #diffs.append(diff_norm)
-            diffs.append(np.linalg.norm(conc_vector))
+            conc_norm = np.linalg.norm(conc_vector)
+            diffs.append(conc_norm)
 
         zipped_lists = list(zip(nucs, concs, diffs))
         sorted_zipped_lists = sorted(zipped_lists, key=lambda x: x[2], reverse=True)
