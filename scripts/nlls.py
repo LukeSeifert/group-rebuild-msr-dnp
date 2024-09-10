@@ -54,7 +54,7 @@ class NNLS:
             elif self.fit_type == 'saturation' or self.fit_type == 'simpleflow':
                 group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
             group_sum += group_val
-        delnu = group_sum * self.efficiency * self.fission_term
+        delnu = group_sum
         return delnu
 
     def group_fit(self, fit_type: str):
@@ -65,9 +65,14 @@ class NNLS:
         else:
             raise Exception(f'{fit_type=} not in {valid_types=}')
         
-        params, covariance, info, _, _ = curve_fit(func, self.times, self.counts,
+        adjusted_counts = [i / (self.fission_term * self.efficiency) for i in self.counts]
+        
+        params, covariance, info, _, _ = curve_fit(func, self.times, adjusted_counts,
                                        p0=[1]*self.num_groups*2, maxfev=100000,
-                                       bounds=(0, 1e3), full_output=True)
+                                       bounds=(0, 1e3), full_output=True,
+                                       xtol=None, gtol=None,
+                                       verbose=0)
+
         chi_squared = np.sum(info['fvec']**2)
         print(f'{chi_squared=}')
         a_fits = params[:self.num_groups]
@@ -105,7 +110,7 @@ if __name__ == "__main__":
     yields = [0.00063, 0.00351, 0.00310, 0.00672, 0.00211, 0.00043]
     hls = [54.51, 21.84, 6.00, 2.23, 0.496, 0.179]
     lams = [np.log(2)/hl for hl in hls]
-    fissions = 1E16
+    fissions = 1e16
     times, counts = Count.from_groups(yields, lams, fissions)
     
     num_groups = 6
