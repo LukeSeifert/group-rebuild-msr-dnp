@@ -82,7 +82,7 @@ class DelayedCounts:
             for group in range(len(yields)):
                 run_count += mult_term[group] * np.exp(-lams[group] * t)
             counts.append(leading_term * run_count)
-        print(f'Group delnu: {round(sum(yields), 4)}')
+        print(f'Group delnu (summed yields): {round(sum(yields), 4)}')
         return self.times, counts
     
     def get_delnu(self, fissions: float, counts: list, times: list):
@@ -105,9 +105,8 @@ class DelayedCounts:
         """
         delnu = sp.integrate.simpson(counts, x=times) / fissions
         return delnu
-        
-
     
+
     def count_compare(self, count_names: list, times: list, counts: list,
                       fissions: list = None):
         for i in range(len(count_names)):
@@ -135,6 +134,25 @@ class DelayedCounts:
             plt.tight_layout()
             plt.savefig(f'./images/counts_per_fiss.png')
             plt.close()
+        
+        base_times = times[0]
+        base_counts = counts[0]
+        base_name = count_names[0]
+        for i in range(len(count_names)):
+            if np.any(base_times != times[i]):
+                continue
+            if i == 0:
+                continue
+            pcnt_diff = ((np.asarray(counts[i]) - np.asarray(base_counts)) / np.asarray(base_counts) * 100)
+            plt.plot(times[i], pcnt_diff, label=f'{count_names[i]}-{base_name}')
+        plt.legend()
+        plt.xlabel('Time [s]')
+        plt.ylabel('Neutron Count Difference [\%]')
+        plt.tight_layout()
+        plt.savefig(f'./images/countscompare.png')
+        plt.close()
+
+        
         return
 
     def run_counter(self, name: str, time_list: list, count_list: list,
@@ -161,7 +179,7 @@ class DelayedCounts:
             delnu = Count.get_delnu(fissions, delnu_counts, times)
             fission_list.append(fissions)
 
-        print(f'(Only valid if pulse) {name=} {delnu=:.3E}\n')
+        print(f'(Only valid if pulse) (integration of counts) {name=} {delnu=:.3E}\n')
         time_list.append(times)
         count_list.append(delnu_counts)
         name_list.append(name)
@@ -199,21 +217,38 @@ if __name__ == "__main__":
                                                                       fissions=fissions,
                                                                       cutoff=cutoff)
 
-#    name = 'Flowing'
-#    csv_path = f'./results/{name}/concs.csv'
-#    avg_fiss_rate=4.222E+13
-#    net_fiss=1.773E+16
-#    fissions = avg_fiss_rate
-#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-#                                                                      time_list,
-#                                                                      count_list,
-#                                                                      name_list, 
-#                                                                      fission_list,
-#                                                                      method='conc',
-#                                                                      csv_path=csv_path,
-#                                                                      fissions=fissions,
-#                                                                      cutoff=cutoff)
-#
+    name = 'Flowing'
+    csv_path = f'./results/{name}/concs.csv'
+    avg_fiss_rate=4.222E+13
+    net_fiss=1.773E+16
+    fissions = avg_fiss_rate
+    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+                                                                      time_list,
+                                                                      count_list,
+                                                                      name_list, 
+                                                                      fission_list,
+                                                                      method='conc',
+                                                                      csv_path=csv_path,
+                                                                      fissions=fissions,
+                                                                      cutoff=cutoff)
+
+    name = 'ExFlowing'
+    csv_path = f'./results/{name}/concs.csv'
+    avg_fiss_rate=8.550e13
+    net_fiss=3.333E+16
+    fissions = avg_fiss_rate
+    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+                                                                      time_list,
+                                                                      count_list,
+                                                                      name_list, 
+                                                                      fission_list,
+                                                                      method='conc',
+                                                                      csv_path=csv_path,
+                                                                      fissions=fissions,
+                                                                      cutoff=cutoff)
+    
+
+
 
 #    name = 'Keepin Fit (Saturation)'
 #    yields = [0.00063, 0.00351, 0.00310, 0.00672, 0.00211, 0.00043]
@@ -247,7 +282,7 @@ if __name__ == "__main__":
 #                                                                      csv_path=csv_path,
 #                                                                      fissions=fissions,
 #                                                                      cutoff=cutoff)
-#
+
 #    name = 'Keepin Fit (Pulse)'
 #    yields = [0.00063, 0.00351, 0.00310, 0.00672, 0.00211, 0.00043]
 #    hls = [54.51, 21.84, 6.00, 2.23, 0.496, 0.179]
@@ -260,6 +295,38 @@ if __name__ == "__main__":
 #                                                                      fission_list,
 #                                                                      method='group',
 #                                                                      csv_path=csv_path,
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff,
+#                                                                      yields=yields,
+#                                                                      lams=lams)
+
+#    name = 'Static Fit'
+#    yields = [0.00052, 0.00238, 0.0011, 0.00386, 0.00562, 0.00541]
+#    hls = [55.63849, 24.44051, 14.40527, 4.29679, 1.71689, 0.27369]
+#    lams = [np.log(2)/hl for hl in hls]
+#    fissions = 1E16
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='group',
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff,
+#                                                                      yields=yields,
+#                                                                      lams=lams)
+#
+#    name = 'Flowing Fit'
+#    yields = [0.00051, 0.00207, 0.0011, 0.00386, 0.00562, 0.00541]
+#    hls = [55.63997, 24.58458, 14.40527, 4.29679, 1.71689, 0.27369]
+#    lams = [np.log(2)/hl for hl in hls]
+#    fissions = 1E16
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='group',
 #                                                                      fissions=fissions,
 #                                                                      cutoff=cutoff,
 #                                                                      yields=yields,
