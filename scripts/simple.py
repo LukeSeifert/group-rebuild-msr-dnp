@@ -67,6 +67,7 @@ class IrradSimple:
             self.chain = data_dict['chain']
             self.name = data_dict['name']
             self.net_irrad_time_s = data_dict['final_time']
+            self.repr_dict = data_dict['repr']
 
             # 3 gram spherical sample
             self.vol = 3 / self.sample_dens
@@ -305,6 +306,12 @@ class IrradSimple:
         coupled_operator = openmc.deplete.CoupledOperator(self.model,
                                                           chain_file=self.chain,
                                                           normalization_mode='source-rate')
+        if self.repr_dict is not None:
+            repr_obj = openmc.deplete.transfer_rates.TransferRates(coupled_operator,
+                                                                   self.model)
+            for element in list(self.repr_dict.keys()):
+                repr_obj.set_transfer_rate('1', [element],
+                                           transfer_rate=self.repr_dict[element])
         timesteps, source_rates = self._get_times_rates()
         integrator = openmc.deplete.PredictorIntegrator(coupled_operator,
                                                         timesteps=timesteps,
