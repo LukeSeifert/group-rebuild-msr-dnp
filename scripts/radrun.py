@@ -65,7 +65,7 @@ class Run:
             print(f'     {avg_fiss_rate = :.3E}')
             print(f'     {net_fiss = :.3E}')
             print(f'     {fiss_frac_min = :.3E}')
-        return
+        return avg_fiss_rate, net_fiss
     
     def _delnu_analysis(self):
         for vi, version in enumerate(self.metadict['fiss'].keys()):
@@ -73,7 +73,7 @@ class Run:
             final_nonzero = [i for i in reversed(delnu_data) if i > 0][0]
             delnu = final_nonzero / self.avg_fiss_rate[version]
             print(version)
-            print(f'     {delnu=:.3E}')
+            print(f'     {delnu=:.3E} from OpenMC tally')
         return
 
     
@@ -210,12 +210,18 @@ if __name__ == "__main__":
     import ui
     runner = Run(ui.nuc_list,
                  run_omc=False)
-    flowing = IrradSimple(data_dict=ui.base_case_data)
+    flowing = IrradSimple(data_dict=ui.flow_data)
     static = IrradSimple(data_dict=ui.static_data)
     pulse = IrradSimple(data_dict=ui.pulse_data)
-    runner.simple_compare(flowing,
-                          static,
-                          pulse)
+    exflow = IrradSimple(data_dict=ui.mostly_excore_data)
+    reprflow = IrradSimple(data_dict=ui.flow_repr_data)
+    #runner.simple_compare(flowing,
+    #                      static,
+    #                      pulse,
+    #                      exflow)
+    runner.simple_compare(exflow, flowing, static, reprflow)
     #runner.write_concentrations(flowing)
     #runner.write_concentrations(static)
     #runner.write_concentrations(pulse)
+    #runner.write_concentrations(exflow)
+    #runner.write_concentrations(reprflow)
