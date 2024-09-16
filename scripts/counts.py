@@ -202,51 +202,51 @@ if __name__ == "__main__":
     fission_list = list()
     Count = DelayedCounts(dt, tf, t0)
 
-    name = 'Static'
-    csv_path = f'./results/{name}/concs.csv'
-    avg_fiss_rate = 4.290E+13
-    net_fiss = 1.802E+16
-    fissions = avg_fiss_rate
-    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-                                                                      time_list,
-                                                                      count_list,
-                                                                      name_list, 
-                                                                      fission_list,
-                                                                      method='conc',
-                                                                      csv_path=csv_path,
-                                                                      fissions=fissions,
-                                                                      cutoff=cutoff)
-
-    name = 'Flowing'
-    csv_path = f'./results/{name}/concs.csv'
-    avg_fiss_rate=4.222E+13
-    net_fiss=1.773E+16
-    fissions = avg_fiss_rate
-    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-                                                                      time_list,
-                                                                      count_list,
-                                                                      name_list, 
-                                                                      fission_list,
-                                                                      method='conc',
-                                                                      csv_path=csv_path,
-                                                                      fissions=fissions,
-                                                                      cutoff=cutoff)
-
-    name = 'ExFlowing'
-    csv_path = f'./results/{name}/concs.csv'
-    avg_fiss_rate=8.550e13
-    net_fiss=3.333E+16
-    fissions = avg_fiss_rate
-    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-                                                                      time_list,
-                                                                      count_list,
-                                                                      name_list, 
-                                                                      fission_list,
-                                                                      method='conc',
-                                                                      csv_path=csv_path,
-                                                                      fissions=fissions,
-                                                                      cutoff=cutoff)
-    
+#    name = 'Static'
+#    csv_path = f'./results/{name}/concs.csv'
+#    avg_fiss_rate = 4.290E+13
+#    net_fiss = 1.802E+16
+#    fissions = avg_fiss_rate
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='conc',
+#                                                                      csv_path=csv_path,
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff)
+#
+#    name = 'Flowing'
+#    csv_path = f'./results/{name}/concs.csv'
+#    avg_fiss_rate=4.222E+13
+#    net_fiss=1.773E+16
+#    fissions = avg_fiss_rate
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='conc',
+#                                                                      csv_path=csv_path,
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff)
+#
+#    name = 'ExFlowing'
+#    csv_path = f'./results/{name}/concs.csv'
+#    avg_fiss_rate=8.535e13
+#    net_fiss=4.272E+16
+#    fissions = avg_fiss_rate
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='conc',
+#                                                                      csv_path=csv_path,
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff)
+#    
 
 
 
@@ -300,21 +300,37 @@ if __name__ == "__main__":
 #                                                                      yields=yields,
 #                                                                      lams=lams)
 
-#    name = 'Static Fit'
-#    yields = [0.00052, 0.00238, 0.0011, 0.00386, 0.00562, 0.00541]
-#    hls = [55.63849, 24.44051, 14.40527, 4.29679, 1.71689, 0.27369]
-#    lams = [np.log(2)/hl for hl in hls]
-#    fissions = 1E16
-#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-#                                                                      time_list,
-#                                                                      count_list,
-#                                                                      name_list, 
-#                                                                      fission_list,
-#                                                                      method='group',
-#                                                                      fissions=fissions,
-#                                                                      cutoff=cutoff,
-#                                                                      yields=yields,
-#                                                                      lams=lams)
+    name = 'Static Fit'
+    yields = [0.00052, 0.00238, 0.0011, 0.00386, 0.00562, 0.00541]
+    hls = [55.63849, 24.44051, 14.40527, 4.29679, 1.71689, 0.27369]
+    lams = [np.log(2)/hl for hl in hls]
+    fissions = 1E16
+    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+                                                                      time_list,
+                                                                      count_list,
+                                                                      name_list, 
+                                                                      fission_list,
+                                                                      method='group',
+                                                                      fissions=fissions,
+                                                                      cutoff=cutoff,
+                                                                      yields=yields,
+                                                                      lams=lams)
+
+    name = 'Flowing Repr Fit'
+    yields = [0.0005, 0.00204, 0.0011, 0.00386, 0.00562, 0.00541]
+    hls = [55.63979, 24.56228, 14.40527, 4.29679, 1.71689, 0.27369]
+    lams = [np.log(2)/hl for hl in hls]
+    fissions = 1e16
+    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+                                                                      time_list,
+                                                                      count_list,
+                                                                      name_list, 
+                                                                      fission_list,
+                                                                      method='group',
+                                                                      fissions=fissions,
+                                                                      cutoff=cutoff,
+                                                                      yields=yields,
+                                                                      lams=lams)
 #
 #    name = 'Flowing Fit'
 #    yields = [0.00051, 0.00207, 0.0011, 0.00386, 0.00562, 0.00541]
