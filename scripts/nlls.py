@@ -14,7 +14,7 @@ class NNLS:
     def __init__(self, groups: int, efficiency: float,
                  fission_term: float, times: list,
                  counts: list, a_vals_fix: list,
-                 lam_vals_fix: list, linearize: bool):
+                 lam_vals_fix: list):
         self.num_groups = groups
         self.efficiency = efficiency
         self.fission_term = fission_term
@@ -22,7 +22,6 @@ class NNLS:
         self.counts = counts
         self.a_vals_fix = a_vals_fix
         self.lam_vals_fix = lam_vals_fix
-        self.linearize = linearize
         self.fit_type = None
         self.num_unknowns_a   = len([i for i in a_vals_fix if i is None])
         self.num_unknowns_lam = len([i for i in lam_vals_fix if i is None])
@@ -73,8 +72,9 @@ class NNLS:
         params, covariance, info, _, _ = curve_fit(func, self.times, adjusted_counts,
                                     p0=[1]*self.num_unknowns, maxfev=100000,
                                     bounds=(0, 1e3), full_output=True,
-                                    xtol=None, gtol=None,
-                                    verbose=0, sigma=np.asarray(adjusted_counts))
+                                    xtol=2.23e-16, gtol=2.23e-16,
+                                    verbose=0, sigma=np.asarray(adjusted_counts),
+                                    ftol=2.23e-16)
 
         chi_squared = np.sum(info['fvec']**2)
         print(f'{chi_squared=}')
@@ -149,7 +149,7 @@ def _print_helper(name, a_fits, tot_yield, lam_fits, half_lives):
     print(f'    yields = {np.round(a_fits, 5).tolist()}')
     print(f'    hls = {np.round(half_lives, 5).tolist()}')
     print(f'    lams = {np.round(lam_fits, 5).tolist()}')
-    print(f'    delnu = {float(np.round(tot_yield, 5))}')
+    print(f'    delnu (from summed yields) = {float(np.round(tot_yield, 5))}')
     print()
     return
 
@@ -167,7 +167,7 @@ def keepin_test(Count: DelayedCounts):
     lam_vals_fix = [None] * 6
     group = NNLS(groups=num_groups, efficiency=1, fission_term=fissions,
                 times=times, counts=counts, a_vals_fix=a_vals_fix,
-                lam_vals_fix=lam_vals_fix, linearize=False)
+                lam_vals_fix=lam_vals_fix)
     a_fits, lam_fits = group.group_fit('pulse')
     half_lives = [np.log(2)/lam for lam in lam_fits]
     tot_yield = sum(a_fits)
@@ -177,7 +177,6 @@ def keepin_test(Count: DelayedCounts):
 def from_counts(name: str, fission_term: float, Count: DelayedCounts,
                 a_vals_fix: list, lam_vals_fix: list,
                 irrad_type: str,
-                linearize: bool,
                 cutoff_scale: float=1):
     num_groups = len(a_vals_fix)
     csv_path = f'./results/{name}/concs.csv'
@@ -186,7 +185,7 @@ def from_counts(name: str, fission_term: float, Count: DelayedCounts,
     num_groups = 6
     group = NNLS(groups=num_groups, efficiency=1, fission_term=fission_term,
                  times=times, counts=counts, a_vals_fix=a_vals_fix,
-                 lam_vals_fix=lam_vals_fix, linearize=linearize)
+                 lam_vals_fix=lam_vals_fix)
     a_fits, lam_fits = group.group_fit(irrad_type)
     group._plot(name, times, counts, a_fits, lam_fits, irrad_type)
     half_lives = [np.log(2)/lam for lam in lam_fits]
@@ -206,25 +205,23 @@ if __name__ == "__main__":
     dt = 1e-1
     tf = 1000
     Count = DelayedCounts(dt, tf)
-    linearize = True
 
     #a_fits, lam_fits = keepin_test(Count)
 
     
-    name = 'Pulse'
-    irrad_type = 'pulse'
-    net_fiss = 8.502E+14
-    num_groups = 6
-    fission_term = net_fiss
-    a_vals_fix = [None] * num_groups
-    lam_vals_fix = [None] * num_groups
-    cutoff_scale = 1
-    pulse_a_fits, pulse_lam_fits = from_counts(name, fission_term, Count,
-                                               a_vals_fix, lam_vals_fix,
-                                               irrad_type, linearize,
-                                               cutoff_scale)
-    
-    Count = DelayedCounts(dt, tf, t0=0)
+#    name = 'Pulse'
+#    irrad_type = 'pulse'
+#    net_fiss = 8.502E+14
+#    num_groups = 6
+#    fission_term = net_fiss
+#    a_vals_fix = [None] * num_groups
+#    lam_vals_fix = [None] * num_groups
+#    cutoff_scale = 1
+#    pulse_a_fits, pulse_lam_fits = from_counts(name, fission_term, Count,
+#                                               a_vals_fix, lam_vals_fix,
+#                                               irrad_type,
+#                                               cutoff_scale)
+#    
     name = 'Static'
     irrad_type = 'saturation'
     avg_fiss_rate = 4.290E+13
@@ -236,21 +233,50 @@ if __name__ == "__main__":
     lam_vals_fix = [None] * 6
     cutoff_scale = 1
     a_fits, lam_fits = from_counts(name, fission_term, Count, a_vals_fix, 
-                                   lam_vals_fix, irrad_type, linearize,
+                                   lam_vals_fix, irrad_type,
                                    cutoff_scale)
-    
-
+#    
+#
     name = 'Flowing'
     irrad_type = 'simpleflow'
     avg_fiss_rate = 4.222E+13
     num_groups = 6
     fission_term = avg_fiss_rate
-    a_vals_fix = [None] * 2 + pulse_a_fits[2:]
-    lam_vals_fix = [None] * 2 + pulse_a_fits[2:]
+    #a_vals_fix = [None] * 2 + pulse_a_fits[2:]
+    #lam_vals_fix = [None] * 2 + pulse_a_fits[2:]
+    a_vals_fix = [None] * 6
+    lam_vals_fix = [None] * 6
     cutoff_scale = 1
     a_fits, lam_fits = from_counts(name, fission_term, Count, a_vals_fix, 
-                                   lam_vals_fix, irrad_type, linearize,
+                                   lam_vals_fix, irrad_type,
                                    cutoff_scale)
 
 
+    name = 'ExFlowing'
+    irrad_type = 'simpleflow'
+    avg_fiss_rate = 8.535e13
+    num_groups = 6
+    fission_term = avg_fiss_rate
+    #a_vals_fix = [None] * 2 + pulse_a_fits[2:]
+    #lam_vals_fix = [None] * 2 + pulse_a_fits[2:]
+    a_vals_fix = [None] * 6
+    lam_vals_fix = [None] * 6
+    cutoff_scale = 1
+    a_fits, lam_fits = from_counts(name, fission_term, Count, a_vals_fix, 
+                                   lam_vals_fix, irrad_type,
+                                   cutoff_scale)
 
+
+    name = 'ReprFlowing'
+    irrad_type = 'simpleflow'
+    avg_fiss_rate = 8.573e13
+    num_groups = 6
+    fission_term = avg_fiss_rate
+    #a_vals_fix = [None] * 2 + pulse_a_fits[2:]
+    #lam_vals_fix = [None] * 2 + pulse_a_fits[2:]
+    a_vals_fix = [None] * 6
+    lam_vals_fix = [None] * 6
+    cutoff_scale = 1
+    a_fits, lam_fits = from_counts(name, fission_term, Count, a_vals_fix, 
+                                   lam_vals_fix, irrad_type,
+                                   cutoff_scale)
