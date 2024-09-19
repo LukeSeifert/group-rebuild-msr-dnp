@@ -3,6 +3,8 @@ from scipy.optimize import curve_fit
 from copy import deepcopy
 from counts import DelayedCounts
 import os
+from radrun import Run
+from simple import IrradSimple
 
 
 class NNLS:
@@ -53,10 +55,13 @@ class NNLS:
         for group in range(self.num_groups):
             if self.fit_type == 'pulse':
                 group_val = (a_vals[group] * lam_vals[group] * np.exp(-lam_vals[group] * t))
+                #group_val = (np.log(a_vals[group] * lam_vals[group]) - lam_vals[group] * t)
             elif self.fit_type == 'saturation' or self.fit_type == 'simpleflow':
                 group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
+                #group_val = (np.log(a_vals[group]) - lam_vals[group] * t)
             group_sum += group_val
-        delnu = group_sum
+        #delnu = group_sum
+        delnu = np.log(group_sum)
         return delnu
 
     def group_fit(self, fit_type: str):
@@ -67,14 +72,20 @@ class NNLS:
         else:
             raise Exception(f'{fit_type=} not in {valid_types=}')
         
-        adjusted_counts = [i / (self.fission_term * self.efficiency) for i in self.counts]
+        #adjusted_counts = [i / (self.fission_term * self.efficiency) for i in self.counts]
+        adjusted_counts = [np.log(i / (self.fission_term * self.efficiency)) for i in self.counts]
         
+        #params, covariance, info, _, _ = curve_fit(func, self.times, adjusted_counts,
+        #                            p0=[1]*self.num_unknowns, maxfev=100000,
+        #                            bounds=(0, 1e3), full_output=True,
+        #                            xtol=2.23e-16, gtol=2.23e-16,
+        #                            verbose=0, sigma=np.asarray(adjusted_counts),
+        #                            ftol=2.23e-16)
         params, covariance, info, _, _ = curve_fit(func, self.times, adjusted_counts,
                                     p0=[1]*self.num_unknowns, maxfev=100000,
                                     bounds=(0, 1e3), full_output=True,
                                     xtol=2.23e-16, gtol=2.23e-16,
-                                    verbose=0, sigma=np.asarray(adjusted_counts),
-                                    ftol=2.23e-16)
+                                    verbose=0, ftol=2.23e-16)
 
         chi_squared = np.sum(info['fvec']**2)
         print(f'{chi_squared=}')
@@ -111,8 +122,10 @@ class NNLS:
         group_counts = list()
         self.fit_type = fit_type
         for t in times:
+            #delnu = (self.fission_term * self.efficiency * 
+            #         self._group_summer(t, params))
             delnu = (self.fission_term * self.efficiency * 
-                     self._group_summer(t, params))
+                     np.exp(self._group_summer(t, params)))
             group_counts.append(delnu)
         plt.plot(times, counts, label='Count data')
         plt.plot(times, group_counts, label='Group data')
@@ -195,6 +208,24 @@ def from_counts(name: str, fission_term: float, Count: DelayedCounts,
 
     return a_fits, lam_fits
 
+def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
+             Count: DelayedCounts):
+    name = IrradObj.name
+    avgF, netF = runner.simple_compare(IrradObj)
+    runner._reset_metadict()
+    num_groups = 6
+    if irrad_type == 'pulse':
+        fission_term = netF
+    elif irrad_type == 'simpleflow' or irrad_type == 'saturation':
+        fission_term = avgF
+    a_vals_fix = [None] * num_groups
+    lam_vals_fix = [None] * num_groups
+    cutoff_scale = 1
+    a_fits, lam_fits = from_counts(name, fission_term, Count,
+                                   a_vals_fix, lam_vals_fix,
+                                   irrad_type,
+                                   cutoff_scale)
+    return a_fits, lam_fits
 
 
 if __name__ == "__main__":
@@ -203,80 +234,31 @@ if __name__ == "__main__":
 
 
     dt = 1e-1
-    tf = 1000
+    tf = 500
     Count = DelayedCounts(dt, tf)
+    runner = Run(ui.nuc_list,
+                 run_omc=False)
 
-    #a_fits, lam_fits = keepin_test(Count)
+#    a_fits, lam_fits = keepin_test(Count)
 
-    
-#    name = 'Pulse'
-#    irrad_type = 'pulse'
-#    net_fiss = 8.502E+14
-#    num_groups = 6
-#    fission_term = net_fiss
-#    a_vals_fix = [None] * num_groups
-#    lam_vals_fix = [None] * num_groups
-#    cutoff_scale = 1
-#    pulse_a_fits, pulse_lam_fits = from_counts(name, fission_term, Count,
-#                                               a_vals_fix, lam_vals_fix,
-#                                               irrad_type,
-#                                               cutoff_scale)
+    irradobj = IrradSimple(data_dict=ui.pulse_data)
+    a_fits, lam_fits = nlls_fit(irradobj, 'pulse', runner, Count)
 #    
-    name = 'Static'
-    irrad_type = 'saturation'
-    avg_fiss_rate = 4.290E+13
-    num_groups = 6
-    fission_term = avg_fiss_rate
-    #a_vals_fix = [None] * 2 + pulse_a_fits[2:]
-    #lam_vals_fix = [None] * 2 + pulse_lam_fits[2:]
-    a_vals_fix = [None] * 6
-    lam_vals_fix = [None] * 6
-    cutoff_scale = 1
-    a_fits, lam_fits = from_counts(name, fission_term, Count, a_vals_fix, 
-                                   lam_vals_fix, irrad_type,
-                                   cutoff_scale)
 #    
+#    irradobj = IrradSimple(data_dict=ui.static_data)
+#    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', runner, Count)
 #
-    name = 'Flowing'
-    irrad_type = 'simpleflow'
-    avg_fiss_rate = 4.222E+13
-    num_groups = 6
-    fission_term = avg_fiss_rate
-    #a_vals_fix = [None] * 2 + pulse_a_fits[2:]
-    #lam_vals_fix = [None] * 2 + pulse_a_fits[2:]
-    a_vals_fix = [None] * 6
-    lam_vals_fix = [None] * 6
-    cutoff_scale = 1
-    a_fits, lam_fits = from_counts(name, fission_term, Count, a_vals_fix, 
-                                   lam_vals_fix, irrad_type,
-                                   cutoff_scale)
+#    irradobj = IrradSimple(data_dict=ui.flow_data)
+#    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
+#
+#    irradobj = IrradSimple(data_dict=ui.mostly_excore_data)
+#    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
+#
+    irradobj = IrradSimple(data_dict=ui.flow_repr_data)
+    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
 
+    irradobj = IrradSimple(data_dict=ui.exflow_repr_data)
+    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
 
-    name = 'ExFlowing'
-    irrad_type = 'simpleflow'
-    avg_fiss_rate = 8.535e13
-    num_groups = 6
-    fission_term = avg_fiss_rate
-    #a_vals_fix = [None] * 2 + pulse_a_fits[2:]
-    #lam_vals_fix = [None] * 2 + pulse_a_fits[2:]
-    a_vals_fix = [None] * 6
-    lam_vals_fix = [None] * 6
-    cutoff_scale = 1
-    a_fits, lam_fits = from_counts(name, fission_term, Count, a_vals_fix, 
-                                   lam_vals_fix, irrad_type,
-                                   cutoff_scale)
-
-
-    name = 'ReprFlowing'
-    irrad_type = 'simpleflow'
-    avg_fiss_rate = 8.573e13
-    num_groups = 6
-    fission_term = avg_fiss_rate
-    #a_vals_fix = [None] * 2 + pulse_a_fits[2:]
-    #lam_vals_fix = [None] * 2 + pulse_a_fits[2:]
-    a_vals_fix = [None] * 6
-    lam_vals_fix = [None] * 6
-    cutoff_scale = 1
-    a_fits, lam_fits = from_counts(name, fission_term, Count, a_vals_fix, 
-                                   lam_vals_fix, irrad_type,
-                                   cutoff_scale)
+    irradobj = IrradSimple(data_dict=ui.static_repr_data)
+    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', runner, Count)
