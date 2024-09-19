@@ -1,12 +1,12 @@
 import matplotlib.pyplot as plt
 
-nuc_list = ['Rb91', 'Br87', 'Cs141']
+nuc_list = ['Rb91', 'Br87', 'Cs141', 'Xe135']
 
 default_batches = 10
 default_nps = 100
 default_source = 4.2e16
 default_temperature = 298.15
-default_energy = 0.0253 * 1e-6
+default_energy = 1 #0.0253 * 1e-6
 default_photons = False
 default_run_mode = 'fixed source'
 default_fissile = 'U235'
@@ -17,10 +17,6 @@ default_name = 'Default'
 default_path = f'./results/{default_name}'
 default_final_time = 7 * 60
 
-if default_energy < 300 * 1e-6:
-    default_chain = '../data/chain/chain_endfb80_pwr.xml'
-else:
-    default_chain = '../data/chain/chain_endfb80_sfr.xml'
 
 
 
@@ -31,7 +27,12 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
                  nps=default_nps, photon_bool=default_photons, 
                  run_mode=default_run_mode, temperature_K=default_temperature,
                  fissile_nuc=default_fissile, dens_g_cc=default_dens,
-                 chain=default_chain, final_time=default_final_time):
+                 final_time=default_final_time,
+                 repr_dict=None):
+    if n_MeV < 300 * 1e-6:
+        chain = '../data/chain/chain_endfb80_pwr.xml'
+    else:
+        chain = '../data/chain/chain_endfb80_sfr.xml'
     S_rate_per_s = net_Sp * (excore_t + incore_t) / (incore_t * final_time)
     data = {
     'name': name,
@@ -48,7 +49,8 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
     'fissile_nuc': fissile_nuc,
     'dens_g_cc': dens_g_cc,
     'chain': chain,
-    'final_time': final_time
+    'final_time': final_time,
+    'repr': repr_dict
     }
     return data
 
@@ -62,8 +64,58 @@ pulse_data = dict_builder(name='Pulse', incore_t=1/4*1e-3, excore_t=0,
 mostly_excore_data = dict_builder(name='ExFlowing', incore_t=10/10,
                                   excore_t=10)
 
+rate = 1/20
+repr_dict = {'Kr': rate,
+             'Xe': rate,
+             'Se': rate,
+             'Nb': rate,
+             'Mo': rate,
+             'Tc': rate,
+             'Ru': rate,
+             'Rh': rate,
+             'Pd': rate,
+             'Ag': rate,
+             'Sb': rate,
+             'Te': rate,
+             }
+
+rate = 1/(50*24*3600)
+more_data = {'Y': rate,
+             'La': rate,
+             'Ce': rate,
+             'Pr': rate,
+             'Nd': rate,
+             'Pm': rate,
+             'Sm': rate,
+             'Gd': rate,
+             'Eu': rate
+}
+repr_dict.update(more_data)
+
+rate = 1/(60*24*3600)
+more_data = {'Br': rate,
+             'I': rate
+}
+repr_dict.update(more_data)
+
+rate = 1/(200*24*3600)
+more_data = {'Zr': rate,
+             'Cd': rate,
+             'In': rate,
+             'Sn': rate
+}
+repr_dict.update(more_data)
 
 
+flow_repr_data = dict_builder(name='ReprFlowing', incore_t=10, excore_t=10,
+                              repr_dict=repr_dict)
+
+exflow_repr_data = dict_builder(name='ReprExFlowing', incore_t=10/10, excore_t=10,
+                              repr_dict=repr_dict)
+
+
+static_repr_data = dict_builder(name='ReprStatic', incore_t=20, excore_t=0,
+                              repr_dict=repr_dict)
 
 
 
