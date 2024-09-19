@@ -191,7 +191,7 @@ class DelayedCounts:
 if __name__ == "__main__":
     import ui
     dt = 1e-1
-    tf = 1000
+    tf = 500
     t0 = 0
     cutoff = 1
 
@@ -301,8 +301,18 @@ if __name__ == "__main__":
 #                                                                      lams=lams)
 
     name = 'Static Fit'
-    yields = [0.00052, 0.00238, 0.0011, 0.00386, 0.00562, 0.00541]
-    hls = [55.63849, 24.44051, 14.40527, 4.29679, 1.71689, 0.27369]
+    # Fast Pu239
+    #yields = [0.00017, 0.00191, 0.0004, 0.00171, 0.00245, 0.00075]
+    #hls = [55.62549, 24.5045, 12.71955, 4.64925, 1.86579, 0.34046]
+    # Thermal Pu239
+    #yields = [0.00017, 0.00184, 0.0004, 0.00171, 0.00245, 0.00075]
+    #hls = [55.62548, 24.50371, 12.71953, 4.64924, 1.86579, 0.34046]
+    # Fast U235
+    yields = [0.00053, 0.00254, 0.00102, 0.0041, 0.00532, 0.00535]
+    hls = [55.6093, 24.23124, 12.71509, 4.04672, 1.64556, 0.27044]
+    # Thermal U235
+    #yields = [0.00052, 0.00238, 0.0011, 0.00386, 0.00562, 0.00541]
+    #hls = [55.63849, 24.44051, 14.40527, 4.29679, 1.71689, 0.27369]
     lams = [np.log(2)/hl for hl in hls]
     fissions = 1E16
     time_list, count_list, name_list, fission_list = Count.run_counter(name,
@@ -317,8 +327,12 @@ if __name__ == "__main__":
                                                                       lams=lams)
 
     name = 'Flowing Repr Fit'
-    yields = [0.0005, 0.00204, 0.0011, 0.00386, 0.00562, 0.00541]
-    hls = [55.63979, 24.56228, 14.40527, 4.29679, 1.71689, 0.27369]
+    # Fast U235
+    yields = [0.00045, 0.00196, 0.0011, 0.00386, 0.00562, 0.00541]
+    hls = [55.63962, 24.58418, 14.40527, 4.29679, 1.71689, 0.27369]
+    # Thermal U235
+    #yields = [0.0005, 0.00204, 0.0011, 0.00386, 0.00562, 0.00541]
+    #hls = [55.63979, 24.56228, 14.40527, 4.29679, 1.71689, 0.27369]
     lams = [np.log(2)/hl for hl in hls]
     fissions = 1e16
     time_list, count_list, name_list, fission_list = Count.run_counter(name,
@@ -331,10 +345,34 @@ if __name__ == "__main__":
                                                                       cutoff=cutoff,
                                                                       yields=yields,
                                                                       lams=lams)
-#
+
 #    name = 'Flowing Fit'
-#    yields = [0.00051, 0.00207, 0.0011, 0.00386, 0.00562, 0.00541]
-#    hls = [55.63997, 24.58458, 14.40527, 4.29679, 1.71689, 0.27369]
+#    # Fast Pu239
+#    #yields = [0.00017, 0.00183, 0.0004, 0.00171, 0.00245, 0.00075]
+#    #hls = [55.31714, 23.84857, 12.71955, 4.64925, 1.86579, 0.34046]
+#    # Fast U235
+#    yields = [0.00051, 0.00236, 0.00102, 0.0041, 0.00532, 0.00535]
+#    hls = [55.57032, 23.913, 12.71509, 4.04672, 1.64556, 0.27044]
+#    # Thermal U235
+#    #yields = [0.00051, 0.00207, 0.0011, 0.00386, 0.00562, 0.00541]
+#    #hls = [55.63997, 24.58458, 14.40527, 4.29679, 1.71689, 0.27369]
+#    lams = [np.log(2)/hl for hl in hls]
+#    fissions = 1E16
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='group',
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff,
+#                                                                      yields=yields,
+#                                                                      lams=lams)
+
+#    name = 'ExFlowing Fit'
+#    # Thermal Pu239
+#    yields = [0.00016, 0.0016, 0.0004, 0.00171, 0.00245, 0.00075]
+#    hls = [55.63946, 24.58579, 12.71953, 4.64924, 1.86579, 0.34046]
 #    lams = [np.log(2)/hl for hl in hls]
 #    fissions = 1E16
 #    time_list, count_list, name_list, fission_list = Count.run_counter(name,
