@@ -317,6 +317,8 @@ class IrradSimple:
                                                         timesteps=timesteps,
                                                         source_rates=source_rates,
                                                         timestep_units='s')
+        if self.repr_dict is not None:
+            integrator.transfer_rates = repr_obj
         start = time.time()
         integrator.integrate()
         end = time.time()
