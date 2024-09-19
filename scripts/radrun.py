@@ -35,6 +35,13 @@ class Run:
         self.iaea_nucs = simple_irrad_obj.iaea_nucs
         return
     
+    def _reset_metadict(self):
+        self.metadict['conc'] = dict()
+        self.metadict['fiss'] = dict()
+        self.metadict['times'] = dict()
+        self.metadict['delnu'] = dict()
+        return
+    
     def _simple_run(self, simple_irrad_obj: IrradSimple):
         if self.run_omc:
             simple_irrad_obj.irradiate()
@@ -150,13 +157,13 @@ class Run:
             self._simple_run(simple_irrad_obj) 
             self.irrad_objs.append(simple_irrad_obj)
 
-        self._fission_analysis()
+        avgF, netF = self._fission_analysis()
         self._delnu_analysis()
         self._nuc_compare()
         self._find_max_nuc_diff()
 
 
-        return
+        return avgF, netF
     
 
     def _nuc_compare(self):
@@ -201,27 +208,26 @@ class Run:
         return
 
 
-
-
-
-
-
 if __name__ == "__main__":
     import ui
     runner = Run(ui.nuc_list,
-                 run_omc=False)
+                 run_omc=True)
     flowing = IrradSimple(data_dict=ui.flow_data)
     static = IrradSimple(data_dict=ui.static_data)
     pulse = IrradSimple(data_dict=ui.pulse_data)
     exflow = IrradSimple(data_dict=ui.mostly_excore_data)
     reprflow = IrradSimple(data_dict=ui.flow_repr_data)
+    exreprflow = IrradSimple(data_dict=ui.exflow_repr_data)
+    reprstatic = IrradSimple(data_dict=ui.static_repr_data)
     #runner.simple_compare(flowing,
     #                      static,
     #                      pulse,
     #                      exflow)
-    runner.simple_compare(exflow, flowing, static, reprflow)
+    #runner.simple_compare(exflow, flowing, static, reprflow)
     #runner.write_concentrations(flowing)
     #runner.write_concentrations(static)
     #runner.write_concentrations(pulse)
     #runner.write_concentrations(exflow)
+    #runner.write_concentrations(exreprflow)
     #runner.write_concentrations(reprflow)
+    runner.write_concentrations(reprstatic)
