@@ -26,14 +26,21 @@ class DelayedCounts:
         self.pns = dict()
         self.lams = dict()
         for i, nuc in enumerate(self.iaea_data['nucid']):
+            d_Pn1 = 0
+            d_Pn2 = 0
+            d_Pn3 = 0
+
             beta_prob = self.iaea_data['  beta- %'][i] / 100
             d_beta_prob = self.iaea_data[' D beta-'][i] / 100
             Pn1 = self.iaea_data[' pn1 % '][i] / 100
-            d_Pn1 = self.iaea_data['D pn1'][i] / 100
+            if Pn1 != 0:
+                d_Pn1 = self.iaea_data['D pn1'][i] / 100
             Pn2 = self.iaea_data[' pn2 % '][i] / 100
-            d_Pn2 = self.iaea_data['D pn2 '][i] / 100
+            if Pn2 != 0:
+                d_Pn2 = self.iaea_data['D pn2 '][i] / 100 
             Pn3 = self.iaea_data[' pn3 % '][i] / 100
-            d_Pn3 = self.iaea_data['D pn3'][i] / 100
+            if Pn3 != 0:
+                d_Pn3 = self.iaea_data['D pn3'][i] / 100
             prob_neutron = beta_prob * (1*Pn1 + 2*Pn2 + 3*Pn3)
             d_prob_neutron = np.sqrt(((Pn1+2*Pn2+3*Pn3) * d_beta_prob)**2 + 
                                      ((beta_prob) * d_Pn1)**2 + 
@@ -47,7 +54,7 @@ class DelayedCounts:
             self.lams[nuc] = lam
         return
     
-    def from_concs(self, csv_path, cutoff_scale = 1):
+    def from_concs(self, csv_path, cutoff_scale = 1, debug=False):
         start = time.time()
         self._order_iaea_data()
         df = pd.read_csv(csv_path)
@@ -67,6 +74,14 @@ class DelayedCounts:
                     continue
                 mult_term[nuc] = mult_val
                 use_nucs.append(nuc)
+        
+        if debug:
+            d_view = [ (v,k) for k,v in mult_term.items() ]
+            d_view.sort(reverse=True)
+            for v,k in d_view:
+                input(f'{k} : {v}')
+
+
 
         for t in self.times:
             run_count = 0
