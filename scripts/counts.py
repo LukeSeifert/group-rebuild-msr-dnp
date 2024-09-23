@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import os
 import time
 import scipy as sp
+from uncertainties import ufloat, unumpy
 
 
 class DelayedCounts:
@@ -26,13 +27,24 @@ class DelayedCounts:
         self.lams = dict()
         for i, nuc in enumerate(self.iaea_data['nucid']):
             beta_prob = self.iaea_data['  beta- %'][i] / 100
+            d_beta_prob = self.iaea_data[' D beta-'][i] / 100
             Pn1 = self.iaea_data[' pn1 % '][i] / 100
+            d_Pn1 = self.iaea_data['D pn1'][i] / 100
             Pn2 = self.iaea_data[' pn2 % '][i] / 100
+            d_Pn2 = self.iaea_data['D pn2 '][i] / 100
             Pn3 = self.iaea_data[' pn3 % '][i] / 100
+            d_Pn3 = self.iaea_data['D pn3'][i] / 100
             prob_neutron = beta_prob * (1*Pn1 + 2*Pn2 + 3*Pn3)
-            lam = self.iaea_data[' T1/2 [s] '][i]
-            self.pns[nuc] = prob_neutron
-            self.lams[nuc] = np.log(2) / lam 
+            d_prob_neutron = np.sqrt(((Pn1+2*Pn2+3*Pn3) * d_beta_prob)**2 + 
+                                     ((beta_prob) * d_Pn1)**2 + 
+                                     ((2 * beta_prob) * d_Pn2)**2 + 
+                                     ((3*beta_prob) * d_Pn3)**2)
+            hl = self.iaea_data[' T1/2 [s] '][i]
+            d_hl = self.iaea_data[' D T1/2 [s]'][i]
+            self.pns[nuc] = ufloat(prob_neutron, d_prob_neutron)
+            hl = ufloat(hl, d_hl)
+            lam = unumpy.log(2) / hl
+            self.lams[nuc] = lam
         return
     
     def from_concs(self, csv_path, cutoff_scale = 1):
@@ -59,12 +71,12 @@ class DelayedCounts:
         for t in self.times:
             run_count = 0
             for nuc in use_nucs:
-                run_count += mult_term[nuc] * np.exp(-self.lams[nuc] * t)
+                run_count += mult_term[nuc] * unumpy.exp(-self.lams[nuc] * t)
             counts.append(run_count)
 
         print(f'Number of nuclides: {len(use_nucs)}')
         end = time.time()
-        print(f'Took {round(end-start, 3)}s for {len(self.times)} steps')
+        print(f'Took {round(end-start, 3)}s for {len(self.times)} steps to generate counts')
         return self.times, counts
     
     def from_groups(self, yields: list, lams: list, fissions: float,
@@ -110,7 +122,10 @@ class DelayedCounts:
     def count_compare(self, count_names: list, times: list, counts: list,
                       fissions: list = None):
         for i in range(len(count_names)):
-            plt.plot(times[i], counts[i], label=count_names[i])
+            use_counts = np.asarray([unumpy.nominal_values(x) for x in counts[i]])
+            d_counts = np.asarray([unumpy.std_devs(x) for x in counts[i]])
+            plt.plot(times[i], use_counts, label=count_names[i])
+            plt.fill_between(times[i], use_counts+d_counts, use_counts-d_counts, alpha=0.6)
         plt.legend()
         plt.xlabel('Time [s]')
         plt.ylabel('Delayed Neutron Counts')
@@ -125,8 +140,10 @@ class DelayedCounts:
 
         if type(fissions) != type(None):
             for i in range(len(count_names)):
-                use_counts = [counts[i][j]/fissions[i] for j in range(len(counts[i]))]
+                use_counts = np.asarray([unumpy.nominal_values(counts[i][j]/fissions[i]) for j in range(len(counts[i]))])
+                d_counts = np.asarray([unumpy.std_devs(counts[i][j]/fissions[i]) for j in range(len(counts[i]))])
                 plt.plot(times[i], use_counts, label=count_names[i])
+                plt.fill_between(times[i], use_counts+d_counts, use_counts-d_counts, alpha=0.6)
             plt.legend()
             plt.xlabel('Time [s]')
             plt.ylabel('Delayed Neutron Counts per Fission')
@@ -136,14 +153,15 @@ class DelayedCounts:
             plt.close()
         
         base_times = times[0]
-        base_counts = counts[0]
+        base_counts = [unumpy.nominal_values(x) for x in counts[0]]
         base_name = count_names[0]
         for i in range(len(count_names)):
             if np.any(base_times != times[i]):
                 continue
             if i == 0:
                 continue
-            pcnt_diff = ((np.asarray(counts[i]) - np.asarray(base_counts)) / np.asarray(base_counts) * 100)
+            use_counts = [unumpy.nominal_values(x) for x in counts[i]]
+            pcnt_diff = ((np.asarray(use_counts) - np.asarray(base_counts)) / np.asarray(base_counts) * 100)
             plt.plot(times[i], pcnt_diff, label=f'{count_names[i]}-{base_name}')
         plt.legend()
         plt.xlabel('Time [s]')
@@ -202,20 +220,20 @@ if __name__ == "__main__":
     fission_list = list()
     Count = DelayedCounts(dt, tf, t0)
 
-#    name = 'Static'
-#    csv_path = f'./results/{name}/concs.csv'
-#    avg_fiss_rate = 4.290E+13
-#    net_fiss = 1.802E+16
-#    fissions = avg_fiss_rate
-#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-#                                                                      time_list,
-#                                                                      count_list,
-#                                                                      name_list, 
-#                                                                      fission_list,
-#                                                                      method='conc',
-#                                                                      csv_path=csv_path,
-#                                                                      fissions=fissions,
-#                                                                      cutoff=cutoff)
+    name = 'Static'
+    csv_path = f'./results/{name}/concs.csv'
+    avg_fiss_rate = 4.290E+13
+    net_fiss = 1.802E+16
+    fissions = avg_fiss_rate
+    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+                                                                      time_list,
+                                                                      count_list,
+                                                                      name_list, 
+                                                                      fission_list,
+                                                                      method='conc',
+                                                                      csv_path=csv_path,
+                                                                      fissions=fissions,
+                                                                      cutoff=cutoff)
 #
 #    name = 'Flowing'
 #    csv_path = f'./results/{name}/concs.csv'
@@ -300,51 +318,72 @@ if __name__ == "__main__":
 #                                                                      yields=yields,
 #                                                                      lams=lams)
 
-    name = 'Static Fit'
-    # Fast Pu239
-    #yields = [0.00017, 0.00191, 0.0004, 0.00171, 0.00245, 0.00075]
-    #hls = [55.62549, 24.5045, 12.71955, 4.64925, 1.86579, 0.34046]
-    # Thermal Pu239
-    #yields = [0.00017, 0.00184, 0.0004, 0.00171, 0.00245, 0.00075]
-    #hls = [55.62548, 24.50371, 12.71953, 4.64924, 1.86579, 0.34046]
-    # Fast U235
-    yields = [0.00053, 0.00254, 0.00102, 0.0041, 0.00532, 0.00535]
-    hls = [55.6093, 24.23124, 12.71509, 4.04672, 1.64556, 0.27044]
-    # Thermal U235
-    #yields = [0.00052, 0.00238, 0.0011, 0.00386, 0.00562, 0.00541]
-    #hls = [55.63849, 24.44051, 14.40527, 4.29679, 1.71689, 0.27369]
-    lams = [np.log(2)/hl for hl in hls]
-    fissions = 1E16
-    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-                                                                      time_list,
-                                                                      count_list,
-                                                                      name_list, 
-                                                                      fission_list,
-                                                                      method='group',
-                                                                      fissions=fissions,
-                                                                      cutoff=cutoff,
-                                                                      yields=yields,
-                                                                      lams=lams)
+#    name = 'Static Fit'
+#    # Fast Pu239
+#    #yields = [0.00017, 0.00191, 0.0004, 0.00171, 0.00245, 0.00075]
+#    #hls = [55.62549, 24.5045, 12.71955, 4.64925, 1.86579, 0.34046]
+#    # Thermal Pu239
+#    #yields = [0.00017, 0.00184, 0.0004, 0.00171, 0.00245, 0.00075]
+#    #hls = [55.62548, 24.50371, 12.71953, 4.64924, 1.86579, 0.34046]
+#    # Fast U235
+#    yields = [0.00053, 0.00254, 0.00102, 0.0041, 0.00532, 0.00535]
+#    hls = [55.6093, 24.23124, 12.71509, 4.04672, 1.64556, 0.27044]
+#    # Thermal U235
+#    #yields = [0.00052, 0.00238, 0.0011, 0.00386, 0.00562, 0.00541]
+#    #hls = [55.63849, 24.44051, 14.40527, 4.29679, 1.71689, 0.27369]
+#    lams = [np.log(2)/hl for hl in hls]
+#    fissions = 1E16
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='group',
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff,
+#                                                                      yields=yields,
+#                                                                      lams=lams)
+    
 
-    name = 'Flowing Repr Fit'
-    # Fast U235
-    yields = [0.00045, 0.00196, 0.0011, 0.00386, 0.00562, 0.00541]
-    hls = [55.63962, 24.58418, 14.40527, 4.29679, 1.71689, 0.27369]
-    # Thermal U235
-    #yields = [0.0005, 0.00204, 0.0011, 0.00386, 0.00562, 0.00541]
-    #hls = [55.63979, 24.56228, 14.40527, 4.29679, 1.71689, 0.27369]
-    lams = [np.log(2)/hl for hl in hls]
-    fissions = 1e16
-    time_list, count_list, name_list, fission_list = Count.run_counter(name,
-                                                                      time_list,
-                                                                      count_list,
-                                                                      name_list, 
-                                                                      fission_list,
-                                                                      method='group',
-                                                                      fissions=fissions,
-                                                                      cutoff=cutoff,
-                                                                      yields=yields,
-                                                                      lams=lams)
+#    name = 'Repr Static Fit'
+#    # Fast Pu239
+#    # Thermal Pu239
+#    # Fast U235
+#    yields = [0.00047, 0.00244, 0.00102, 0.0041, 0.00532, 0.00535]
+#    hls = [55.6085, 24.26064, 12.71509, 4.04672, 1.64556, 0.27044]
+#    # Thermal U235
+#    lams = [np.log(2)/hl for hl in hls]
+#    fissions = 1E16
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='group',
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff,
+#                                                                      yields=yields,
+#                                                                      lams=lams)
+
+#    name = 'Flowing Repr Fit'
+#    # Fast U235
+#    yields = [0.00045, 0.00196, 0.0011, 0.00386, 0.00562, 0.00541]
+#    hls = [55.63962, 24.58418, 14.40527, 4.29679, 1.71689, 0.27369]
+#    # Thermal U235
+#    #yields = [0.0005, 0.00204, 0.0011, 0.00386, 0.00562, 0.00541]
+#    #hls = [55.63979, 24.56228, 14.40527, 4.29679, 1.71689, 0.27369]
+#    lams = [np.log(2)/hl for hl in hls]
+#    fissions = 1e16
+#    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+#                                                                      time_list,
+#                                                                      count_list,
+#                                                                      name_list, 
+#                                                                      fission_list,
+#                                                                      method='group',
+#                                                                      fissions=fissions,
+#                                                                      cutoff=cutoff,
+#                                                                      yields=yields,
+#                                                                      lams=lams)
 
 #    name = 'Flowing Fit'
 #    # Fast Pu239
