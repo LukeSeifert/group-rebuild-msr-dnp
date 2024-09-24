@@ -368,12 +368,13 @@ class IrradSimple:
     
     def collect_delnu(self):
         delnu = dict()
+        delnu['d'] = dict()
+        delnu['p'] = dict()
         for i in range(len(self.times)):
             sp = openmc.StatePoint(f'{self.output_path}/openmc_simulation_n{i}.h5')
             for tally in sp.tallies.keys():
                 tally_data = sp.get_tally(id=tally)
                 if 'delnuyield' in tally_data.name:
-                    delnu['d'] = dict()
                     use_dict = delnu['d']
                     df = tally_data.get_pandas_dataframe(filters=False, scores=False, derivative=False, paths=False)
                     try:
@@ -387,12 +388,12 @@ class IrradSimple:
                         for nuc in df_sorted['nuclide']:
                             use_dict[nuc] = np.zeros(len(self.times))
                         use_dict['net'] = np.zeros(len(self.times))
+                    
                     for nuc_i, nuc in enumerate(df_sorted['nuclide']):
                         use_dict[nuc][i] = df_sorted['mean'][nuc_i]
                         use_dict['net'][i] += use_dict[nuc][i]
 
                 if 'pmtnuyield' in tally_data.name:
-                    delnu['p'] = dict()
                     use_dict = delnu['p']
                     df = tally_data.get_pandas_dataframe(filters=False, scores=False, derivative=False, paths=False)
                     try:
@@ -410,10 +411,14 @@ class IrradSimple:
                         use_dict[nuc][i] = df_sorted['mean'][nuc_i]
                         use_dict['net'][i] += use_dict[nuc][i]
 
-        fiss_keys = list(delnu.keys())
+        fiss_keys = list(delnu['d'].keys())
         for nuc in fiss_keys:
-            if np.all(delnu[nuc] <= 1e-12 * np.ones(len(self.times))):
-                del delnu[nuc]
+            if np.all(delnu['d'][nuc] <= 1e-12 * np.ones(len(self.times))):
+                del delnu['d'][nuc]
+        fiss_keys = list(delnu['p'].keys())
+        for nuc in fiss_keys:
+            if np.all(delnu['p'][nuc] <= 1e-12 * np.ones(len(self.times))):
+                del delnu['p'][nuc]
         return delnu
     
     def collect_fissions(self, print_fiss=False):
