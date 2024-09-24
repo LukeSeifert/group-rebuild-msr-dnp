@@ -214,7 +214,23 @@ class IrradSimple:
         delnu_tally = openmc.Tally(name='delnuyield')
         delnu_tally.filters = [mesh_filter]
         delnu_tally.scores = ['delayed-nu-fission']
-        delnu_tally.multiply_density = True
+        delnu_tally.multiply_density = False
+        delnu_tally.nuclides = list(set(self.xs_nuclide_list))# + self.iaea_nucs))
+        tallies_file.append(delnu_tally)
+
+        # Prompt Neutron Yield tally
+        delnu_tally = openmc.Tally(name='pmtnuyield')
+        delnu_tally.filters = [mesh_filter]
+        delnu_tally.scores = ['prompt-nu-fission']
+        delnu_tally.multiply_density = False
+        delnu_tally.nuclides = list(set(self.xs_nuclide_list))# + self.iaea_nucs))
+        tallies_file.append(delnu_tally)
+
+        # Total Neutron Yield tally
+        delnu_tally = openmc.Tally(name='nuyield')
+        delnu_tally.filters = [mesh_filter]
+        delnu_tally.scores = ['nu-fission']
+        delnu_tally.multiply_density = False
         delnu_tally.nuclides = list(set(self.xs_nuclide_list))# + self.iaea_nucs))
         tallies_file.append(delnu_tally)
 
@@ -356,7 +372,9 @@ class IrradSimple:
             sp = openmc.StatePoint(f'{self.output_path}/openmc_simulation_n{i}.h5')
             for tally in sp.tallies.keys():
                 tally_data = sp.get_tally(id=tally)
-                if 'delnu' in tally_data.name:
+                if 'delnuyield' in tally_data.name:
+                    delnu['d'] = dict()
+                    use_dict = delnu['d']
                     df = tally_data.get_pandas_dataframe(filters=False, scores=False, derivative=False, paths=False)
                     try:
                         df['mean'] = df['mean'] * self.S_rate
@@ -367,11 +385,30 @@ class IrradSimple:
 
                     if i == 0:
                         for nuc in df_sorted['nuclide']:
-                            delnu[nuc] = np.zeros(len(self.times))
-                        delnu['net'] = np.zeros(len(self.times))
+                            use_dict[nuc] = np.zeros(len(self.times))
+                        use_dict['net'] = np.zeros(len(self.times))
                     for nuc_i, nuc in enumerate(df_sorted['nuclide']):
-                        delnu[nuc][i] = df_sorted['mean'][nuc_i]
-                        delnu['net'][i] += delnu[nuc][i]
+                        use_dict[nuc][i] = df_sorted['mean'][nuc_i]
+                        use_dict['net'][i] += use_dict[nuc][i]
+
+                if 'pmtnuyield' in tally_data.name:
+                    delnu['p'] = dict()
+                    use_dict = delnu['p']
+                    df = tally_data.get_pandas_dataframe(filters=False, scores=False, derivative=False, paths=False)
+                    try:
+                        df['mean'] = df['mean'] * self.S_rate
+                    except KeyError:
+                        continue
+                    df_sorted = df.sort_values(by='mean', ascending=False)
+                    df_sorted = df_sorted.reset_index(drop=True)
+
+                    if i == 0:
+                        for nuc in df_sorted['nuclide']:
+                            use_dict[nuc] = np.zeros(len(self.times))
+                        use_dict['net'] = np.zeros(len(self.times))
+                    for nuc_i, nuc in enumerate(df_sorted['nuclide']):
+                        use_dict[nuc][i] = df_sorted['mean'][nuc_i]
+                        use_dict['net'][i] += use_dict[nuc][i]
 
         fiss_keys = list(delnu.keys())
         for nuc in fiss_keys:

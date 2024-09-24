@@ -76,11 +76,15 @@ class Run:
     
     def _delnu_analysis(self):
         for vi, version in enumerate(self.metadict['fiss'].keys()):
-            delnu_data = self.metadict['delnu'][version]['net']
+            delnu_data = self.metadict['delnu']['d'][version]['net']
+            prmpt_data = self.metadict['delnu']['p'][version]['net']
             final_nonzero = [i for i in reversed(delnu_data) if i > 0][0]
             delnu = final_nonzero / self.avg_fiss_rate[version]
+            final_nonzero = [i for i in reversed(prmpt_data) if i > 0][0]
+            pmtnu = final_nonzero / self.avg_fiss_rate[version]
             print(version)
             print(f'     {delnu=:.3E} from OpenMC tally')
+            print(f'     {pmtnu=:.3E} from OpenMC tally')
         return
 
     
