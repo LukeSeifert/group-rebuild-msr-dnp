@@ -12,7 +12,9 @@ class Run:
 
     """
 
-    def __init__(self, nuc_list: list, run_omc: bool = False):
+    def __init__(self, nuc_list: list, run_omc: bool = False,
+                 decay_track: bool = True,
+                 write_concs: bool = True):
         """
 
         Parameters
@@ -23,12 +25,10 @@ class Run:
             Run OpenMC irradiation simulation, by default False
         """
         self.run_omc = run_omc
+        self.decay = decay_track
         self.nuc_list = nuc_list
-        self.metadict = dict()
-        self.metadict['conc'] = dict()
-        self.metadict['fiss'] = dict()
-        self.metadict['times'] = dict()
-        self.metadict['delnu'] = dict()
+        self.write_conc = write_concs
+        self._reset_metadict()
 
         simple_irrad_obj = IrradSimple(None)
         simple_irrad_obj._get_data()
@@ -36,23 +36,44 @@ class Run:
         return
     
     def _reset_metadict(self):
+        self.metadict = dict()
         self.metadict['conc'] = dict()
         self.metadict['fiss'] = dict()
         self.metadict['times'] = dict()
         self.metadict['delnu'] = dict()
         return
     
-    def _simple_run(self, simple_irrad_obj: IrradSimple):
-        if self.run_omc:
-            simple_irrad_obj.irradiate()
-        concs, times = simple_irrad_obj.collect_concentrations()
-        fisses = simple_irrad_obj.collect_fissions()
-        delnus = simple_irrad_obj.collect_delnu()
+    def _harvest_data(self, simple_irrad_obj: IrradSimple, 
+                      pathmod: str=''):
+        concs, times = simple_irrad_obj.collect_concentrations(pathmod=pathmod)
+        fisses = simple_irrad_obj.collect_fissions(pathmod=pathmod)
+        delnus = simple_irrad_obj.collect_delnu(pathmod=pathmod)
         version = simple_irrad_obj.name
         self.metadict['conc'][version] = concs
         self.metadict['fiss'][version] = fisses
         self.metadict['times'][version] = times
         self.metadict['delnu'][version] = delnus
+        return
+
+    
+    def _simple_run(self, simple_irrad_obj: IrradSimple):
+        if self.run_omc:
+            simple_irrad_obj.irradiate()
+            self._harvest_data(simple_irrad_obj)
+            if self.write_conc:
+                self.write_concentrations(simple_irrad_obj, decay=False)
+            if self.decay:
+                simple_irrad_obj.decay()
+                self._harvest_data(simple_irrad_obj, pathmod='Decay')
+                if self.write_conc:
+                    self.write_concentrations(simple_irrad_obj, decay=True) 
+        else:
+            pathmod = ''
+            if self.decay:
+                pathmod = 'Decay'
+            self._harvest_data(simple_irrad_obj, pathmod=pathmod)
+            if self.write_conc:
+                self.write_concentrations(simple_irrad_obj, decay=self.decay)  
         return
     
     def _fission_analysis(self):
@@ -76,8 +97,9 @@ class Run:
     
     def _delnu_analysis(self):
         for vi, version in enumerate(self.metadict['fiss'].keys()):
-            delnu_data = self.metadict['delnu']['d'][version]['net']
-            prmpt_data = self.metadict['delnu']['p'][version]['net']
+            target_nuc = self.irrad_objs[vi].sample_nuc
+            delnu_data = self.metadict['delnu'][version]['d'][target_nuc]
+            prmpt_data = self.metadict['delnu'][version]['p'][target_nuc]
             final_nonzero = [i for i in reversed(delnu_data) if i > 0][0]
             delnu = final_nonzero / self.avg_fiss_rate[version]
             final_nonzero = [i for i in reversed(prmpt_data) if i > 0][0]
@@ -156,13 +178,15 @@ class Run:
         Takes in any number of `IrradSimple` objects to be compared
 
         """
+        avgF = 0
+        netF = 0
         self.irrad_objs = list()
         for simple_irrad_obj in args:
             self._simple_run(simple_irrad_obj) 
             self.irrad_objs.append(simple_irrad_obj)
-
-        avgF, netF = self._fission_analysis()
-        self._delnu_analysis()
+        if not self.decay:
+            avgF, netF = self._fission_analysis()
+            self._delnu_analysis()
         self._nuc_compare()
         self._find_max_nuc_diff()
 
@@ -188,7 +212,8 @@ class Run:
             plt.close()
         return
     
-    def write_concentrations(self, simple_irrad_obj: IrradSimple):
+    def write_concentrations(self, simple_irrad_obj: IrradSimple,
+                             decay: bool=True):
         """
         Write the concentrations from the irradiation to a csv file.
         Number of nuclides pre-pruning: 3820
@@ -203,9 +228,14 @@ class Run:
         # Only non-zero and in iaea nucs
         version = simple_irrad_obj.name
         outpath = simple_irrad_obj.output_path
-        self._simple_run(simple_irrad_obj)
+        if decay:
+            outpath += 'Decay'
         concs = self.metadict['conc'][version]
-        final_values = {key: values[-1] for key, values in concs.items() if values[-1] > 0.0 and key in self.iaea_nucs}
+        if not decay:
+            final_values = {key: values[-1] for key, values in concs.items() if values[-1] > 0.0 and key in self.iaea_nucs}
+        else:
+            #final_values = {key: values for key, values in concs.items() if values[0] > 0.0 and key in self.iaea_nucs}
+            final_values = {key: values for key, values in concs.items() if key in self.iaea_nucs}
         df = pd.DataFrame.from_dict(final_values, orient='index')
         output_csv_file = f'{outpath}/concs.csv'
         df.to_csv(output_csv_file, header=False)
@@ -214,8 +244,12 @@ class Run:
 
 if __name__ == "__main__":
     import ui
+    omc = True
+
     runner = Run(ui.nuc_list,
-                 run_omc=True)
+                 run_omc=omc,
+                 decay_track=True,
+                 write_concs=True)
     flowing = IrradSimple(data_dict=ui.flow_data)
     static = IrradSimple(data_dict=ui.static_data)
     pulse = IrradSimple(data_dict=ui.pulse_data)
@@ -227,11 +261,5 @@ if __name__ == "__main__":
     #                      static,
     #                      pulse,
     #                      exflow)
-    #runner.simple_compare(exflow, flowing, static, reprflow)
-    #runner.write_concentrations(flowing)
-    #runner.write_concentrations(static)
-    #runner.write_concentrations(pulse)
-    #runner.write_concentrations(exflow)
-    #runner.write_concentrations(exreprflow)
-    #runner.write_concentrations(reprflow)
-    runner.write_concentrations(reprstatic)
+    #runner.simple_compare(pulse, static, reprflow)
+    runner.simple_compare(static)

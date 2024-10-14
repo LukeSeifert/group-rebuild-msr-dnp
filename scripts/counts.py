@@ -6,6 +6,7 @@ import os
 import time
 import scipy as sp
 from uncertainties import ufloat, unumpy
+from scipy.interpolate import interp1d
 
 
 class DelayedCounts:
@@ -13,13 +14,17 @@ class DelayedCounts:
     This class generates delayed neutron counts for given times either from
         concentrations and IAEA data, or from provided group data    
     """
-    def __init__(self, dt: float, tf: float, t0: float=0):
+    def __init__(self, dt: float, tf: float, t0: float=0,
+                 irrad_obj : IrradSimple=None):
         self.dt = dt
         self.tf = tf
         self.times = np.arange(t0, tf+dt, dt)
 
-        simple_irrad_obj = IrradSimple(None)
-        self.iaea_data = simple_irrad_obj._get_data()
+        if type(irrad_obj) == type(None):
+            self.simple_irrad_obj = IrradSimple(None)
+        else:
+            self.simple_irrad_obj = irrad_obj
+        self.iaea_data = self.simple_irrad_obj._get_data()
         return
     
     def _order_iaea_data(self):
@@ -61,18 +66,32 @@ class DelayedCounts:
         omc_nucs = df.iloc[:, 0]
         concs = df.iloc[:, 1:]
         use_nucs = list()
+        conc_time = False
         if concs.shape[1] > 1:
-            raise Exception('Concentrations as a function of time not implemented')
+            conc_time = True
         counts = list()
         mult_term = dict()
         for nuc in self.iaea_data['nucid']:
+            mult_vals = list()
             if nuc in list(omc_nucs):
                 nuc_index = df[df.iloc[:, 0] == nuc].index[0]
-                conc = df.iloc[nuc_index, 1]
-                mult_val = self.pns[nuc] * self.lams[nuc] * conc
-                if mult_val < cutoff_scale:
+                if not conc_time:
+                    conc = df.iloc[nuc_index, 1]
+                else: 
+                    dt = self.simple_irrad_obj.decay_dt
+                    tf = self.simple_irrad_obj.decay_tf
+                    omc_times = np.arange(0, tf+dt, dt)
+                    interper = interp1d(omc_times, df.iloc[nuc_index, 1:])
+
+                for ti, t in enumerate(self.times):
+                    if conc_time:
+                        mult_val = self.pns[nuc] * self.lams[nuc] * conc(t)
+                    else:
+                        mult_val = self.pns[nuc] * self.lams[nuc] * conc
+                    mult_vals.append(mult_val)
+                if np.max(mult_vals) < cutoff_scale:
                     continue
-                mult_term[nuc] = mult_val
+                mult_term[nuc] = mult_vals
                 use_nucs.append(nuc)
         
         if debug:
@@ -82,12 +101,18 @@ class DelayedCounts:
                 input(f'{k} : {v}')
 
 
-
-        for t in self.times:
-            run_count = 0
-            for nuc in use_nucs:
-                run_count += mult_term[nuc] * unumpy.exp(-self.lams[nuc] * t)
-            counts.append(run_count)
+        if conc_time:
+            for ti, t in enumerate(self.times):
+                run_count = 0
+                for nuc in use_nucs:
+                    run_count += mult_term[nuc][ti]
+                counts.append(run_count)
+        else:
+            for ti, t in enumerate(self.times):
+                run_count = 0
+                for nuc in use_nucs:
+                    run_count += mult_term[nuc][ti] * unumpy.exp(-self.lams[nuc] * t)
+                counts.append(run_count)
 
         print(f'Number of nuclides: {len(use_nucs)}')
         end = time.time()
@@ -236,6 +261,21 @@ if __name__ == "__main__":
     Count = DelayedCounts(dt, tf, t0)
 
     name = 'Static'
+    csv_path = f'./results/{name}/concs.csv'
+    avg_fiss_rate = 4.290E+13
+    net_fiss = 1.802E+16
+    fissions = avg_fiss_rate
+    time_list, count_list, name_list, fission_list = Count.run_counter(name,
+                                                                      time_list,
+                                                                      count_list,
+                                                                      name_list, 
+                                                                      fission_list,
+                                                                      method='conc',
+                                                                      csv_path=csv_path,
+                                                                      fissions=fissions,
+                                                                      cutoff=cutoff)
+
+    name = 'StaticDecay'
     csv_path = f'./results/{name}/concs.csv'
     avg_fiss_rate = 4.290E+13
     net_fiss = 1.802E+16

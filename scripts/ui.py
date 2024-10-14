@@ -9,13 +9,15 @@ default_temperature = 298.15
 default_energy = 1 #0.0253 * 1e-6
 default_photons = False
 default_run_mode = 'fixed source'
-default_fissile = 'U235'
+default_fissile = 'U238'
 default_dens = 10
-default_incore_t = 4
-default_excore_t = 4
+default_incore_t = 10
+default_excore_t = 10
 default_name = 'Default'
 default_path = f'./results/{default_name}'
 default_final_time = 7 * 60
+default_omc_decay_step = 10
+default_omc_decay_time = default_final_time
 
 
 
@@ -28,7 +30,8 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
                  run_mode=default_run_mode, temperature_K=default_temperature,
                  fissile_nuc=default_fissile, dens_g_cc=default_dens,
                  final_time=default_final_time,
-                 repr_dict=None):
+                 repr_dict=None, decay_step=default_omc_decay_step,
+                 decay_time=default_omc_decay_time):
     if n_MeV < 300 * 1e-6:
         chain = '../data/chain/chain_endfb80_pwr.xml'
     else:
@@ -50,7 +53,9 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
     'dens_g_cc': dens_g_cc,
     'chain': chain,
     'final_time': final_time,
-    'repr': repr_dict
+    'repr': repr_dict,
+    'omc_dec_step': decay_step,
+    'omc_dec_time': decay_time
     }
     return data
 

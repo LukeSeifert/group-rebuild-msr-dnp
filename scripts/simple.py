@@ -68,6 +68,8 @@ class IrradSimple:
             self.name = data_dict['name']
             self.net_irrad_time_s = data_dict['final_time']
             self.repr_dict = data_dict['repr']
+            self.decay_dt = data_dict['omc_dec_step']
+            self.decay_tf = data_dict['omc_dec_time']
 
             # 3 gram spherical sample
             self.vol = 3 / self.sample_dens
@@ -124,7 +126,8 @@ class IrradSimple:
 
         """
         xs_library = openmc.data.DataLibrary.from_xml('/home/luke/projects/cross-section-libraries/endfb-viii.0-hdf5/cross_sections.xml')
-        self.xs_nuclide_list = [i['materials'][0] for i in xs_library.libraries][0:556]
+        neutron_data_limit_index = 556
+        self.xs_nuclide_list = [i['materials'][0] for i in xs_library.libraries][0:neutron_data_limit_index]
         iaea_data = self._read_iaea_csv()
         return iaea_data
     
@@ -150,6 +153,7 @@ class IrradSimple:
         source.energy = openmc.stats.Uniform(self.n_energy, self.n_energy)
         source.space = openmc.stats.spherical_uniform(r_outer=self.r_outer)
         source.angle = openmc.stats.Isotropic()
+        source.particle = 'neutron'
 
         settings.source = source
         settings.temperature = {'default': self.temperature,
@@ -214,7 +218,7 @@ class IrradSimple:
         delnu_tally = openmc.Tally(name='delnuyield')
         delnu_tally.filters = [mesh_filter]
         delnu_tally.scores = ['delayed-nu-fission']
-        delnu_tally.multiply_density = False
+        delnu_tally.multiply_density = True
         delnu_tally.nuclides = list(set(self.xs_nuclide_list))# + self.iaea_nucs))
         tallies_file.append(delnu_tally)
 
@@ -222,7 +226,7 @@ class IrradSimple:
         delnu_tally = openmc.Tally(name='pmtnuyield')
         delnu_tally.filters = [mesh_filter]
         delnu_tally.scores = ['prompt-nu-fission']
-        delnu_tally.multiply_density = False
+        delnu_tally.multiply_density = True
         delnu_tally.nuclides = list(set(self.xs_nuclide_list))# + self.iaea_nucs))
         tallies_file.append(delnu_tally)
 
@@ -230,7 +234,7 @@ class IrradSimple:
         delnu_tally = openmc.Tally(name='nuyield')
         delnu_tally.filters = [mesh_filter]
         delnu_tally.scores = ['nu-fission']
-        delnu_tally.multiply_density = False
+        delnu_tally.multiply_density = True
         delnu_tally.nuclides = list(set(self.xs_nuclide_list))# + self.iaea_nucs))
         tallies_file.append(delnu_tally)
 
@@ -341,8 +345,51 @@ class IrradSimple:
         print(f'Took {round(end-start, 3)} s')
         self._cleanup()
         return
+    
+    def decay(self):
+        """
+        Decays the sample for a given amount of time,
+        generating concentrations at each time.
+        Cannot be used before irradiation.
 
-    def collect_concentrations(self):
+        """
+        save_path = self.output_path
+        self.output_path = self.output_path + 'Decay'
+        self._check_pathing()
+        self.build_model(xml_export=False)
+        # Update material composition
+        irrad_res = openmc.deplete.Results(f'{save_path}/depletion_results.h5')
+        chain = openmc.deplete.Chain.from_xml(self.chain)
+        all_nucs = [x.name for x in chain.nuclides]
+        input(all_nucs)
+        new_mat = irrad_res.export_to_materials(-1, path=f'{save_path}/materials.xml',
+                                                nuc_with_data=all_nucs)
+        input(new_mat)
+        model = openmc.model.Model(self.geometry,
+                                   new_mat,
+                                   self.settings,
+                                   self.tallies)
+        coupled_operator = openmc.deplete.CoupledOperator(model,
+                                                          chain_file=self.chain,
+                                                          normalization_mode='source-rate')
+        dt = self.decay_dt
+        tf = self.decay_tf
+        num_timesteps = len(np.arange(0, tf+dt, dt))
+        source_rates = [0] * num_timesteps
+        timesteps = [dt] * num_timesteps
+        integrator = openmc.deplete.PredictorIntegrator(coupled_operator,
+                                                        timesteps=timesteps,
+                                                        source_rates=source_rates,
+                                                        timestep_units='s')
+        start = time.time()
+        integrator.integrate()
+        end = time.time()
+        print(f'Took {round(end-start, 3)} s')
+        self._cleanup()
+        self.output_path = save_path
+        return
+
+    def collect_concentrations(self, pathmod:str=''):
         """
         Collect concentration data from OpenMC depletion results
 
@@ -357,7 +404,7 @@ class IrradSimple:
             Time vector
         """
         concs = dict()
-        results = openmc.deplete.Results(f'{self.output_path}/depletion_results.h5')
+        results = openmc.deplete.Results(f'{self.output_path}{pathmod}/depletion_results.h5')
         self.times = results.get_times('s')
         self.dep_nuclides = list(results[0].index_nuc.keys())
         for nuc in self.dep_nuclides:
@@ -366,12 +413,12 @@ class IrradSimple:
             concs[nuc] = nuc_conc
         return concs, self.times
     
-    def collect_delnu(self):
+    def collect_delnu(self, pathmod:str=''):
         delnu = dict()
         delnu['d'] = dict()
         delnu['p'] = dict()
         for i in range(len(self.times)):
-            sp = openmc.StatePoint(f'{self.output_path}/openmc_simulation_n{i}.h5')
+            sp = openmc.StatePoint(f'{self.output_path}{pathmod}/openmc_simulation_n{i}.h5')
             for tally in sp.tallies.keys():
                 tally_data = sp.get_tally(id=tally)
                 if 'delnuyield' in tally_data.name:
@@ -421,7 +468,7 @@ class IrradSimple:
                 del delnu['p'][nuc]
         return delnu
     
-    def collect_fissions(self, print_fiss=False):
+    def collect_fissions(self, print_fiss:bool=False, pathmod:str=''):
         """
         Collect fission tally data from OpenMC depletion results
 
@@ -435,7 +482,7 @@ class IrradSimple:
         """
         fissions = dict()
         for i in range(len(self.times)):
-            sp = openmc.StatePoint(f'{self.output_path}/openmc_simulation_n{i}.h5')
+            sp = openmc.StatePoint(f'{self.output_path}{pathmod}/openmc_simulation_n{i}.h5')
             for tally in sp.tallies.keys():
                 tally_data = sp.get_tally(id=tally)
                 if self.fiss_tally_name in tally_data.name:
@@ -465,9 +512,13 @@ class IrradSimple:
 
 if __name__ == "__main__":
     import ui
+    run = True
 
     irrad = IrradSimple(data_dict=ui.pulse_data)
-    #irrad.irradiate()
-    irrad.collect_concentrations()
+    if run:
+        irrad.irradiate()
+        irrad.decay()
+    concs, times = irrad.collect_concentrations()
+    print(concs)
     irrad.collect_fissions()
     irrad.collect_delnu()

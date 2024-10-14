@@ -253,25 +253,28 @@ if __name__ == "__main__":
     tf = 500
     Count = DelayedCounts(dt, tf)
     runner = Run(ui.nuc_list,
-                 run_omc=False)
+                 run_omc=False,
+                 decay_track=True,
+                 write_concs=True)
 
 #    a_fits, lam_fits = keepin_test(Count)
 
 #    irradobj = IrradSimple(data_dict=ui.pulse_data)
 #    a_fits, lam_fits = nlls_fit(irradobj, 'pulse', runner, Count)
-#    
-#    
-#    irradobj = IrradSimple(data_dict=ui.static_data)
-#    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', runner, Count)
-#
+
+    ui.static_data['name'] = ui.static_data['name'] #+ 'Decay'
+    irradobj = IrradSimple(data_dict=ui.static_data)
+    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', runner, Count)
+
+#    irradobj = IrradSimple(data_dict=ui.flow_repr_data)
+#    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
+
 #    irradobj = IrradSimple(data_dict=ui.flow_data)
 #    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
 #
 #    irradobj = IrradSimple(data_dict=ui.mostly_excore_data)
 #    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
 #
-    irradobj = IrradSimple(data_dict=ui.flow_repr_data)
-    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
 #
 #    irradobj = IrradSimple(data_dict=ui.exflow_repr_data)
 #    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
