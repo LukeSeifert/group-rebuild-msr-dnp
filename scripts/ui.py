@@ -6,10 +6,10 @@ default_batches = 10
 default_nps = 100
 default_source = 4.2e16
 default_temperature = 298.15
-default_energy = 1 #0.0253 * 1e-6
+default_energy = 0.0253 * 1e-6
 default_photons = False
 default_run_mode = 'fixed source'
-default_fissile = 'U238'
+default_fissile = 'U235'
 default_dens = 10
 default_incore_t = 10
 default_excore_t = 10
@@ -17,7 +17,7 @@ default_name = 'Default'
 default_path = f'./results/{default_name}'
 default_final_time = 7 * 60
 default_omc_decay_step = 10
-default_omc_decay_time = default_final_time
+default_omc_decay_time = 420
 
 
 
