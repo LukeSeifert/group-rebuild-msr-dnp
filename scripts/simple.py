@@ -361,10 +361,8 @@ class IrradSimple:
         irrad_res = openmc.deplete.Results(f'{save_path}/depletion_results.h5')
         chain = openmc.deplete.Chain.from_xml(self.chain)
         all_nucs = [x.name for x in chain.nuclides]
-        input(all_nucs)
         new_mat = irrad_res.export_to_materials(-1, path=f'{save_path}/materials.xml',
                                                 nuc_with_data=all_nucs)
-        input(new_mat)
         model = openmc.model.Model(self.geometry,
                                    new_mat,
                                    self.settings,
@@ -417,7 +415,9 @@ class IrradSimple:
         delnu = dict()
         delnu['d'] = dict()
         delnu['p'] = dict()
-        for i in range(len(self.times)):
+        results = openmc.deplete.Results(f'{self.output_path}{pathmod}/depletion_results.h5')
+        times = results.get_times('s')
+        for i in range(len(times)):
             sp = openmc.StatePoint(f'{self.output_path}{pathmod}/openmc_simulation_n{i}.h5')
             for tally in sp.tallies.keys():
                 tally_data = sp.get_tally(id=tally)
@@ -433,8 +433,8 @@ class IrradSimple:
 
                     if i == 0:
                         for nuc in df_sorted['nuclide']:
-                            use_dict[nuc] = np.zeros(len(self.times))
-                        use_dict['net'] = np.zeros(len(self.times))
+                            use_dict[nuc] = np.zeros(len(times))
+                        use_dict['net'] = np.zeros(len(times))
                     
                     for nuc_i, nuc in enumerate(df_sorted['nuclide']):
                         use_dict[nuc][i] = df_sorted['mean'][nuc_i]
@@ -452,19 +452,19 @@ class IrradSimple:
 
                     if i == 0:
                         for nuc in df_sorted['nuclide']:
-                            use_dict[nuc] = np.zeros(len(self.times))
-                        use_dict['net'] = np.zeros(len(self.times))
+                            use_dict[nuc] = np.zeros(len(times))
+                        use_dict['net'] = np.zeros(len(times))
                     for nuc_i, nuc in enumerate(df_sorted['nuclide']):
                         use_dict[nuc][i] = df_sorted['mean'][nuc_i]
                         use_dict['net'][i] += use_dict[nuc][i]
 
         fiss_keys = list(delnu['d'].keys())
         for nuc in fiss_keys:
-            if np.all(delnu['d'][nuc] <= 1e-12 * np.ones(len(self.times))):
+            if np.all(delnu['d'][nuc] <= 1e-12 * np.ones(len(times))):
                 del delnu['d'][nuc]
         fiss_keys = list(delnu['p'].keys())
         for nuc in fiss_keys:
-            if np.all(delnu['p'][nuc] <= 1e-12 * np.ones(len(self.times))):
+            if np.all(delnu['p'][nuc] <= 1e-12 * np.ones(len(times))):
                 del delnu['p'][nuc]
         return delnu
     
@@ -481,7 +481,9 @@ class IrradSimple:
                 Array of net fissions over time
         """
         fissions = dict()
-        for i in range(len(self.times)):
+        results = openmc.deplete.Results(f'{self.output_path}{pathmod}/depletion_results.h5')
+        times = results.get_times('s')
+        for i in range(len(times)):
             sp = openmc.StatePoint(f'{self.output_path}{pathmod}/openmc_simulation_n{i}.h5')
             for tally in sp.tallies.keys():
                 tally_data = sp.get_tally(id=tally)
@@ -495,19 +497,19 @@ class IrradSimple:
                     df_sorted = df_sorted.reset_index(drop=True)
                     if i == 0:
                         for nuc in df_sorted['nuclide']:
-                            fissions[nuc] = np.zeros(len(self.times))
-                        fissions['net'] = np.zeros(len(self.times))
+                            fissions[nuc] = np.zeros(len(times))
+                        fissions['net'] = np.zeros(len(times))
                     for nuc_i, nuc in enumerate(df_sorted['nuclide']):
                         fissions[nuc][i] = df_sorted['mean'][nuc_i]
                         fissions['net'][i] += fissions[nuc][i]
 
         fiss_keys = list(fissions.keys())
         for nuc in fiss_keys:
-            if np.all(fissions[nuc] <= 1e-12 * np.ones(len(self.times))):
+            if np.all(fissions[nuc] <= 1e-12 * np.ones(len(times))):
                 del fissions[nuc]
         if print_fiss:
             print(fissions)
-        return fissions
+        return fissions, times
 
 
 if __name__ == "__main__":
@@ -519,6 +521,5 @@ if __name__ == "__main__":
         irrad.irradiate()
         irrad.decay()
     concs, times = irrad.collect_concentrations()
-    print(concs)
     irrad.collect_fissions()
     irrad.collect_delnu()

@@ -5,6 +5,7 @@ import os
 import numpy as np
 import scipy as sp
 import pandas as pd
+import openmc.data
 
 class Run:
     """
@@ -46,17 +47,19 @@ class Run:
     def _harvest_data(self, simple_irrad_obj: IrradSimple, 
                       pathmod: str=''):
         concs, times = simple_irrad_obj.collect_concentrations(pathmod=pathmod)
-        fisses = simple_irrad_obj.collect_fissions(pathmod=pathmod)
-        delnus = simple_irrad_obj.collect_delnu(pathmod=pathmod)
+        fisses, ftimes = simple_irrad_obj.collect_fissions()
+        delnus = simple_irrad_obj.collect_delnu()
         version = simple_irrad_obj.name
         self.metadict['conc'][version] = concs
         self.metadict['fiss'][version] = fisses
         self.metadict['times'][version] = times
+        self.metadict['times'][version+'Decay'] = ftimes
         self.metadict['delnu'][version] = delnus
         return
 
     
     def _simple_run(self, simple_irrad_obj: IrradSimple):
+        self.use_times = {}
         if self.run_omc:
             simple_irrad_obj.irradiate()
             self._harvest_data(simple_irrad_obj)
@@ -80,8 +83,12 @@ class Run:
         self.avg_fiss_rate = dict()
         for vi, version in enumerate(self.metadict['fiss'].keys()):
             fission_rates = self.metadict['fiss'][version]['net']
-            times = self.metadict['times'][version]
-            fissions = np.sum(fission_rates[:-1] * np.diff(times))
+            try:
+                times = self.metadict['times'][version]
+                fissions = np.sum(fission_rates[:-1] * np.diff(times))
+            except ValueError:
+                times = self.metadict['times'][version+'Decay']
+                fissions = np.sum(fission_rates[:-1] * np.diff(times))
             target_nuc = self.irrad_objs[vi].sample_nuc
             target_fiss_rate = self.metadict['fiss'][version][target_nuc]
             target_fiss = np.sum(target_fiss_rate[:-1] * np.diff(times))
@@ -184,14 +191,54 @@ class Run:
         for simple_irrad_obj in args:
             self._simple_run(simple_irrad_obj) 
             self.irrad_objs.append(simple_irrad_obj)
-        if not self.decay:
-            avgF, netF = self._fission_analysis()
-            self._delnu_analysis()
+
+        avgF, netF = self._fission_analysis()
+        self._delnu_analysis()
         self._nuc_compare()
         self._find_max_nuc_diff()
+        if self.decay:
+            self._compare_decay()
 
 
         return avgF, netF
+
+    def _compare_decay(self):
+        pcnt_diffs = dict()
+        versions = list(self.metadict['conc'].keys())
+        for nuc in self.nuc_list:
+            for version in versions:
+                conc = self.metadict['conc'][version][nuc]
+                times = self.metadict['times'][version]
+                plt.plot(times, conc, label=version)
+                hl = openmc.data.half_life(nuc)
+                lam = np.log(2) / hl
+                conc_e = conc[0] * np.exp(-lam * times)
+                plt.plot(times, conc_e, label=version+' Exponential Fit')
+                pcnt_diff = (conc - conc_e) / (conc_e) * 100
+                pcnt_diffs[version] = pcnt_diff
+            plt.xlabel('Time [s]')
+            plt.ylabel('Concentration [atoms]')
+            plt.legend()
+            plt.tight_layout()
+            try:
+                plt.savefig(f'./images/{nuc}_decay.png')
+            except FileNotFoundError:
+                os.mkdir('./images')
+                plt.savefig(f'./images/{nuc}_decay.png')
+            plt.close()
+
+            for version in versions:
+                plt.plot(times, pcnt_diffs[version], label=version + ' - Exp Fit')
+            plt.xlabel('Time [s]')
+            plt.ylabel('Percent Difference [%]')
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(f'./images/{nuc}_decay_pcnt.png')
+            plt.close()
+            
+                
+
+        return
     
 
     def _nuc_compare(self):
@@ -244,12 +291,12 @@ class Run:
 
 if __name__ == "__main__":
     import ui
-    omc = True
+    omc = False
 
     runner = Run(ui.nuc_list,
                  run_omc=omc,
                  decay_track=True,
-                 write_concs=True)
+                 write_concs=False)
     flowing = IrradSimple(data_dict=ui.flow_data)
     static = IrradSimple(data_dict=ui.static_data)
     pulse = IrradSimple(data_dict=ui.pulse_data)
@@ -262,4 +309,5 @@ if __name__ == "__main__":
     #                      pulse,
     #                      exflow)
     #runner.simple_compare(pulse, static, reprflow)
+    #runner.simple_compare(static)
     runner.simple_compare(static)

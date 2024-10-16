@@ -81,11 +81,11 @@ class DelayedCounts:
                     dt = self.simple_irrad_obj.decay_dt
                     tf = self.simple_irrad_obj.decay_tf
                     omc_times = np.arange(0, tf+dt, dt)
-                    interper = interp1d(omc_times, df.iloc[nuc_index, 1:])
+                    interper = interp1d(omc_times, df.iloc[nuc_index, 1:-1])
 
                 for ti, t in enumerate(self.times):
                     if conc_time:
-                        mult_val = self.pns[nuc] * self.lams[nuc] * conc(t)
+                        mult_val = self.pns[nuc] * self.lams[nuc] * interper(t)
                     else:
                         mult_val = self.pns[nuc] * self.lams[nuc] * conc
                     mult_vals.append(mult_val)
@@ -248,8 +248,8 @@ class DelayedCounts:
 
 if __name__ == "__main__":
     import ui
-    dt = 1e-1
-    tf = 500
+    dt = ui.default_omc_decay_step / 100
+    tf = ui.default_omc_decay_time
     t0 = 0
     cutoff = 1
 
@@ -265,6 +265,8 @@ if __name__ == "__main__":
     avg_fiss_rate = 4.290E+13
     net_fiss = 1.802E+16
     fissions = avg_fiss_rate
+    irrad_obj = IrradSimple(ui.static_data)
+    Count = DelayedCounts(dt, tf, t0, irrad_obj)
     time_list, count_list, name_list, fission_list = Count.run_counter(name,
                                                                       time_list,
                                                                       count_list,
@@ -274,12 +276,8 @@ if __name__ == "__main__":
                                                                       csv_path=csv_path,
                                                                       fissions=fissions,
                                                                       cutoff=cutoff)
-
     name = 'StaticDecay'
     csv_path = f'./results/{name}/concs.csv'
-    avg_fiss_rate = 4.290E+13
-    net_fiss = 1.802E+16
-    fissions = avg_fiss_rate
     time_list, count_list, name_list, fission_list = Count.run_counter(name,
                                                                       time_list,
                                                                       count_list,

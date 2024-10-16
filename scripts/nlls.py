@@ -249,22 +249,27 @@ if __name__ == "__main__":
     import ui
 
 
-    dt = 1e-1
-    tf = 500
+    dt = ui.default_omc_decay_step / 100
+    tf = ui.default_omc_decay_time
+
     Count = DelayedCounts(dt, tf)
     runner = Run(ui.nuc_list,
                  run_omc=False,
+                 decay_track=False,
+                 write_concs=False)
+    dec_runner = Run(ui.nuc_list,
+                 run_omc=False,
                  decay_track=True,
-                 write_concs=True)
+                 write_concs=False)
 
 #    a_fits, lam_fits = keepin_test(Count)
 
 #    irradobj = IrradSimple(data_dict=ui.pulse_data)
 #    a_fits, lam_fits = nlls_fit(irradobj, 'pulse', runner, Count)
 
-    ui.static_data['name'] = ui.static_data['name'] #+ 'Decay'
     irradobj = IrradSimple(data_dict=ui.static_data)
     a_fits, lam_fits = nlls_fit(irradobj, 'saturation', runner, Count)
+    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', dec_runner, Count)
 
 #    irradobj = IrradSimple(data_dict=ui.flow_repr_data)
 #    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
