@@ -363,6 +363,19 @@ class IrradSimple:
         all_nucs = [x.name for x in chain.nuclides]
         new_mat = irrad_res.export_to_materials(-1, path=f'{save_path}/materials.xml',
                                                 nuc_with_data=all_nucs)
+        # New material can have concs on the order 1e-300, causing error
+        if len(new_mat) > 1:
+            raise IndexError("Number of materials exceeds one")
+        all_adens = new_mat[0].get_nuclide_atom_densities()
+        for nuc, adens in all_adens.items():
+            if adens < 1e-40:
+                new_mat[0].remove_nuclide(nuc)
+                new_mat[0].add_nuclide(nuc, 0, 'ao')
+        model = openmc.model.Model(self.geometry,
+                                   new_mat,
+                                   self.settings,
+                                   self.tallies)
+        model.export_to_xml(save_path)
         model = openmc.model.Model(self.geometry,
                                    new_mat,
                                    self.settings,
