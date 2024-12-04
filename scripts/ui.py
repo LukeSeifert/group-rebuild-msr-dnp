@@ -16,7 +16,7 @@ default_excore_t = 10
 default_name = 'Default'
 default_path = f'./results/{default_name}'
 default_final_time = 7 * 60
-default_omc_decay_step = 10
+default_omc_decay_step = 1
 default_omc_decay_time = 420
 
 
