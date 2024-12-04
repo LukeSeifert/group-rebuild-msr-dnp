@@ -7,9 +7,10 @@ from radrun import Run
 from simple import IrradSimple
 from uncertainties import ufloat, unumpy
 import time
+import matplotlib.pyplot as plt
 
 
-class NNLS:
+class NLLS:
     """
     This class handles the non-linear least-squares functions and solvers
 
@@ -188,7 +189,7 @@ def keepin_test(Count: DelayedCounts):
     num_groups = 6
     a_vals_fix = [None] * 6
     lam_vals_fix = [None] * 6
-    group = NNLS(groups=num_groups, efficiency=1, fission_term=fissions,
+    group = NLLS(groups=num_groups, efficiency=1, fission_term=fissions,
                 times=times, counts=counts, a_vals_fix=a_vals_fix,
                 lam_vals_fix=lam_vals_fix)
     a_fits, lam_fits = group.group_fit('pulse')
@@ -206,7 +207,7 @@ def from_counts(name: str, fission_term: float, Count: DelayedCounts,
     times, counts = Count.from_concs(csv_path, cutoff_scale=cutoff_scale)
 
     num_groups = 6
-    group = NNLS(groups=num_groups, efficiency=1, fission_term=fission_term,
+    group = NLLS(groups=num_groups, efficiency=1, fission_term=fission_term,
                  times=times, counts=counts, a_vals_fix=a_vals_fix,
                  lam_vals_fix=lam_vals_fix)
     a_fits, lam_fits = group.group_fit(irrad_type)
@@ -247,18 +248,20 @@ def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import ui
+    run_omc = False
 
 
-    dt = ui.default_omc_decay_step / 100
-    tf = ui.default_omc_decay_time
+
+    dt = 0.1
+    tf = 420
 
     Count = DelayedCounts(dt, tf)
     runner = Run(ui.nuc_list,
-                 run_omc=False,
+                 run_omc=run_omc,
                  decay_track=False,
                  write_concs=False)
     dec_runner = Run(ui.nuc_list,
-                 run_omc=False,
+                 run_omc=run_omc,
                  decay_track=True,
                  write_concs=False)
 
