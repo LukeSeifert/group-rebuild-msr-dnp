@@ -376,10 +376,6 @@ class IrradSimple:
                                    self.settings,
                                    self.tallies)
         model.export_to_xml(save_path)
-        model = openmc.model.Model(self.geometry,
-                                   new_mat,
-                                   self.settings,
-                                   self.tallies)
         coupled_operator = openmc.deplete.CoupledOperator(model,
                                                           chain_file=self.chain,
                                                           normalization_mode='source-rate')
