@@ -22,7 +22,7 @@ plt.rcParams["ytick.minor.size"] = 3.0
 plt.rcParams["figure.autolayout"] = True
 plt.rcParams['savefig.dpi'] = 300
 
-data_name = 'default'
+data_name = 'fastu235ORIGEN'
 plot_topics = ['yields', 'halflives']
 y_names = ['Yield', 'Half-life [s]']
 for i, fname in enumerate(plot_topics):
