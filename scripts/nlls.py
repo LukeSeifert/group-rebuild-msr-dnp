@@ -8,6 +8,7 @@ from simple import IrradSimple
 from uncertainties import ufloat, unumpy
 import time
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 class NLLS:
@@ -220,11 +221,10 @@ def from_counts(name: str, fission_term: float, Count: DelayedCounts,
     return a_fits, lam_fits
 
 def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
-             Count: DelayedCounts):
+             Count: DelayedCounts, num_groups=6):
     name = IrradObj.name
     avgF, netF = runner.simple_compare(IrradObj)
     runner._reset_metadict()
-    num_groups = 6
     if irrad_type == 'pulse':
         fission_term = netF
     elif irrad_type == 'simpleflow' or irrad_type == 'saturation':
@@ -244,16 +244,54 @@ def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
                                    cutoff_scale)
     return a_fits, lam_fits
 
+def gen_fit(irrad_obj : IrradSimple,
+            data_dict : dict,
+            irrad_type : str,
+            runner : Run,
+            Count : DelayedCounts,
+            fit_func):
+
+    irradobj = irrad_obj(data_dict)
+    a_fits, lam_fits = fit_func(irradobj, irrad_type, runner, Count)
+    return a_fits, lam_fits
+
+def generate_csvs(all_fits: dict,
+                  csv_path: str = './postprocess',
+                  csv_name: str = 'default'):
+    yld_data = {'Yield': [],
+                'Group': [],
+                'Data Source': []}
+    hls_data = {'Half-life [s]': [],
+                'Group': [],
+                'Data Source': []}
+    for fit_type in all_fits.keys():
+        for source in all_fits[fit_type].keys():
+            use_data = all_fits[fit_type][source]
+            for group in range(len(use_data)):
+                if fit_type == 'yield':
+                    yld_data['Yield'].append(use_data[group])
+                    yld_data['Group'].append(group+1)
+                    yld_data['Data Source'].append(source)
+                elif fit_type == 'halflife':
+                    hls_data['Half-life [s]'].append(use_data[group])
+                    hls_data['Group'].append(group+1)
+                    hls_data['Data Source'].append(source)
+                else:
+                    raise KeyError(f'Key {fit_type} not available as option')
+    df = pd.DataFrame(yld_data)
+    df.to_csv(f'{csv_path}/yields/{csv_name}.csv')
+
+    df = pd.DataFrame(hls_data)
+    df.to_csv(f'{csv_path}/halflives/{csv_name}.csv')
+    return
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
     import ui
-    run_omc = False
-
+    run_omc = True
 
 
     dt = 0.1
-    tf = 420
+    tf = ui.default_final_time
 
     Count = DelayedCounts(dt, tf)
     runner = Run(ui.nuc_list,
@@ -263,16 +301,16 @@ if __name__ == "__main__":
     dec_runner = Run(ui.nuc_list,
                  run_omc=run_omc,
                  decay_track=True,
-                 write_concs=False)
+                 write_concs=True)
 
 #    a_fits, lam_fits = keepin_test(Count)
 
-#    irradobj = IrradSimple(data_dict=ui.pulse_data)
-#    a_fits, lam_fits = nlls_fit(irradobj, 'pulse', runner, Count)
+    irradobj = IrradSimple(data_dict=ui.pulse_data)
+    a_fits, lam_fits = nlls_fit(irradobj, 'pulse', dec_runner, Count)
 
-    irradobj = IrradSimple(data_dict=ui.static_data)
-    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', runner, Count)
-    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', dec_runner, Count)
+#    irradobj = IrradSimple(data_dict=ui.static_data)
+#    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', runner, Count)
+#    a_fits, lam_fits = nlls_fit(irradobj, 'saturation', dec_runner, Count)
 
 #    irradobj = IrradSimple(data_dict=ui.flow_repr_data)
 #    a_fits, lam_fits = nlls_fit(irradobj, 'simpleflow', runner, Count)
