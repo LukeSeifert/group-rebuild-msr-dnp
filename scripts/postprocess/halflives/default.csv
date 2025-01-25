@@ -1,49 +1,19 @@
-Half-life [s],Group,Data Source
-55.57540, 1,    Static
-55.63070, 1,   Flowing
-51.72740, 1, ENDF/B-VI
-55.89897, 1,    Keepin
-55.45177, 1,     Mills
-55.45177, 1,     Saleh
-54.57852, 1,    Tuttle
-54.57852, 1,     Waldo
-24.12540, 2,    Static
-24.49850, 2,   Flowing
-21.19716, 2, ENDF/B-VI
-22.72614, 2,    Keepin
-22.80089, 2,     Mills
-22.80089, 2,     Saleh
-21.86584, 2,    Tuttle
-21.86584, 2,     Waldo
-11.81540, 3,    Static
-11.81540, 3,   Flowing
- 5.73797, 3, ENDF/B-VI
- 6.24457, 3,    Keepin
- 7.67605, 3,     Mills
- 7.67605, 3,     Saleh
- 6.02737, 3,    Tuttle
- 6.02737, 3,     Waldo
- 3.97011, 4,    Static
- 3.97011, 4,   Flowing
- 2.28913, 4, ENDF/B-VI
- 2.30281, 4,    Keepin
- 2.77259, 4,     Mills
- 2.77259, 4,     Saleh
- 2.22877, 4,    Tuttle
- 2.22877, 4,     Waldo
- 1.64599, 5,    Static
- 1.64599, 5,   Flowing
- 0.81595, 5, ENDF/B-VI
- 0.60802, 5,    Keepin
- 1.06638, 5,     Mills
- 1.06638, 5,     Saleh
- 0.49511, 5,    Tuttle
- 0.49511, 5,     Waldo
- 0.26709, 6,    Static
- 0.26709, 6,   Flowing
- 0.24295, 6, ENDF/B-VI
- 0.23028, 6,    Keepin
- 0.28177, 6,     Mills
- 0.28177, 6,     Saleh
- 0.17911, 6,    Tuttle
- 0.17911, 6,     Waldo
+,Half-life [s],Group,Data Source
+0,55.04073335496652,1,Pulse
+1,23.38861426259639,2,Pulse
+2,11.26442606364973,3,Pulse
+3,3.8097397093752488,4,Pulse
+4,1.5703084135890213,5,Pulse
+5,0.266901355173462,6,Pulse
+6,55.56041472008602,1,Static
+7,24.05032623595593,2,Static
+8,14.297380670811693,3,Static
+9,4.372611117527749,4,Static
+10,1.6468558602657188,5,Static
+11,0.3698685493897182,6,Static
+12,55.56041472008602,1,Static-Pulse
+13,24.05032623595593,2,Static-Pulse
+14,14.297380670811693,3,Static-Pulse
+15,4.372611117527749,4,Static-Pulse
+16,1.5703084135890213,5,Static-Pulse
+17,0.266901355173462,6,Static-Pulse

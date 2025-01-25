@@ -1,49 +1,19 @@
-Yield,Group,Data Source
-0.0005, 1,    Static
-0.0005, 1,   Flowing
-0.0006, 1, ENDF/B-VI
-0.0005, 1,    Keepin
-0.0006, 1,     Mills
-0.0006, 1,     Saleh
-0.0007, 1,    Tuttle
-0.0006, 1,     Waldo
-0.0025, 2,    Static
-0.0021, 2,   Flowing
-0.0030, 2, ENDF/B-VI
-0.0035, 2,    Keepin
-0.0032, 2,     Mills
-0.0032, 2,     Saleh
-0.0036, 2,    Tuttle
-0.0037, 2,     Waldo
-0.0010, 3,    Static
-0.0010, 3,   Flowing
-0.0029, 3, ENDF/B-VI
-0.0031, 3,    Keepin
-0.0020, 3,     Mills
-0.0020, 3,     Saleh
-0.0032, 3,    Tuttle
-0.0033, 3,     Waldo
-0.0041, 4,    Static
-0.0041, 4,   Flowing
-0.0065, 4, ENDF/B-VI
-0.0062, 4,    Keepin
-0.0066, 4,     Mills
-0.0066, 4,     Saleh
-0.0069, 4,    Tuttle
-0.0066, 4,     Waldo
-0.0052, 5,    Static
-0.0052, 5,   Flowing
-0.0027, 5, ENDF/B-VI
-0.0018, 5,    Keepin
-0.0029, 5,     Mills
-0.0029, 5,     Saleh
-0.0022, 5,    Tuttle
-0.0019, 5,     Waldo
-0.0057, 6,    Static
-0.0057, 6,   Flowing
-0.0011, 6, ENDF/B-VI
-0.0007, 6,    Keepin
-0.0012, 6,     Mills
-0.0012, 6,     Saleh
-0.0004, 6,    Tuttle
-0.0007, 6,     Waldo
+,Yield,Group,Data Source
+0,0.00033810601763539793,1,Pulse
+1,0.0025433815299599565,2,Pulse
+2,0.0010168192795817553,3,Pulse
+3,0.004350084798722701,4,Pulse
+4,0.005004048173466483,5,Pulse
+5,0.005291231516184769,6,Pulse
+6,0.0005360685637534033,1,Static
+7,0.002682367761061776,2,Static
+8,0.001260112031585676,3,Static
+9,0.004198330608449201,4,Static
+10,0.007376947793412231,5,Static
+11,0.004959265059416853,6,Static
+12,0.0005360685637534033,1,Static-Pulse
+13,0.002682367761061776,2,Static-Pulse
+14,0.001260112031585676,3,Static-Pulse
+15,0.004198330608449201,4,Static-Pulse
+16,0.005004048173466483,5,Static-Pulse
+17,0.005291231516184769,6,Static-Pulse
