@@ -5,20 +5,10 @@ from counts import DelayedCounts
 import numpy as np
 import pandas as pd
 from copy import deepcopy
+import ui
 
-if __name__ == '__main__':
-    import ui
-
-    run_omc = False
-    decay_daughter = True
-    csv_name = 'default'
-
-    all_fits = dict()
-    all_fits['yield'] = {}
-    all_fits['halflife'] = {}
-
-    dt = 0.1
-    tf = ui.default_omc_decay_time
+def run_fit(all_fits, dt, tf, run_omc, decay_daughter, data,
+            irrad_type:str='saturation'):
 
     Count = DelayedCounts(dt, tf)
     runner = Run(ui.nuc_list,
@@ -34,27 +24,18 @@ if __name__ == '__main__':
     else:
         run_obj = runner
 
-    data = ui.pulse_data
     a_fit, lam_fit = nlls.gen_fit(IrradSimple,
                                   data,
-                                  'pulse',
+                                  irrad_type,
                                   run_obj,
                                   Count,
                                   nlls.nlls_fit)
     all_fits['yield'][data['name']] = a_fit
     all_fits['halflife'][data['name']] = np.log(2) / lam_fit
 
-    data = ui.static_data
-    a_fit, lam_fit = nlls.gen_fit(IrradSimple,
-                                  data,
-                                  'saturation',
-                                  run_obj,
-                                  Count,
-                                  nlls.nlls_fit)
-    all_fits['yield'][data['name']] = a_fit
-    all_fits['halflife'][data['name']] = np.log(2) / lam_fit
+    return all_fits
 
-
+def combine_pulse(all_fits):
     base_dict = deepcopy(all_fits)
     hl_fits = base_dict['halflife']
     a_fits = base_dict['yield']
@@ -64,5 +45,29 @@ if __name__ == '__main__':
             ylds = np.append(a_fits[fit][:4], a_fits[ui.pulse_data['name']][4:])
             all_fits['yield'][f'{fit}-{ui.pulse_data["name"]}'] = ylds
             all_fits['halflife'][f'{fit}-{ui.pulse_data["name"]}'] = hls
+    return all_fits
+
+
+
+if __name__ == '__main__':
+
+    run_omc = False
+    decay_daughter = True
+    csv_name = '920K'
+
+    all_fits = dict()
+    all_fits['yield'] = {}
+    all_fits['halflife'] = {}
+
+    dt = 0.1
+    tf = ui.default_omc_decay_time
+
+    all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
+                       ui.pulse_data, 'pulse')
+
+    all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
+                       ui.static_data, 'saturation')
+
+    all_fits = combine_pulse(all_fits)
 
     nlls.generate_csvs(all_fits, csv_name=csv_name)

@@ -5,6 +5,7 @@ nuc_list = ['Rb91', 'Br87', 'Cs141', 'Xe135']
 default_batches = 10
 default_nps = 100
 default_source = 4.2e16
+# Temperatures in ENDF are: 0, 250, 294, 600, 900, 1200, 2500K
 default_temperature = 920 #298.15 #https://mooseframework.inl.gov/virtual_test_bed/msr/msre/msre_sam_model.html
 default_energy = 0.0253 * 1e-6 #50*1e3*1e-6
 default_photons = False
