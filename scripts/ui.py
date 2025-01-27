@@ -5,7 +5,7 @@ nuc_list = ['Rb91', 'Br87', 'Cs141', 'Xe135']
 default_batches = 10
 default_nps = 100
 default_source = 4.2e16
-default_temperature = 298.15
+default_temperature = 920 #298.15 #https://mooseframework.inl.gov/virtual_test_bed/msr/msre/msre_sam_model.html
 default_energy = 0.0253 * 1e-6 #50*1e3*1e-6
 default_photons = False
 default_run_mode = 'fixed source'
@@ -14,7 +14,8 @@ default_dens = 10
 default_incore_t = 10
 default_excore_t = 10
 default_name = 'Default'
-default_path = f'./results/{default_name}'
+default_path = f'./results'
+#default_path = f'./postprocess/archived-data/results-920K'
 default_final_time = 7 * 60
 default_omc_decay_step = 1
 default_omc_decay_time = 420
@@ -31,7 +32,8 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
                  fissile_nuc=default_fissile, dens_g_cc=default_dens,
                  final_time=default_final_time,
                  repr_dict=None, decay_step=default_omc_decay_step,
-                 decay_time=default_omc_decay_time):
+                 decay_time=default_omc_decay_time,
+                 res_path=default_path):
     if n_MeV < 300 * 1e-6:
         chain = '../data/chain/chain_endfb80_pwr.xml'
     else:
@@ -44,7 +46,7 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
     'n_MeV': n_MeV,
     'S_rate_per_s': S_rate_per_s,
     'batches': batches,
-    'output_path': f'./results/{name}',
+    'output_path': f'{res_path}/{name}',
     'nps': nps,
     'photon_bool': photon_bool,
     'run_mode': run_mode,

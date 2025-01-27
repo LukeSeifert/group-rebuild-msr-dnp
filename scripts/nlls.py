@@ -202,9 +202,10 @@ def keepin_test(Count: DelayedCounts):
 def from_counts(name: str, fission_term: float, Count: DelayedCounts,
                 a_vals_fix: list, lam_vals_fix: list,
                 irrad_type: str,
+                output_path: str,
                 cutoff_scale: float=1):
     num_groups = len(a_vals_fix)
-    csv_path = f'./results/{name}/concs.csv'
+    csv_path = f'{output_path}/concs.csv'
     times, counts = Count.from_concs(csv_path, cutoff_scale=cutoff_scale)
 
     num_groups = 6
@@ -223,6 +224,7 @@ def from_counts(name: str, fission_term: float, Count: DelayedCounts,
 def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
              Count: DelayedCounts, num_groups=6):
     name = IrradObj.name
+    output_path = IrradObj.output_path
     avgF, netF = runner.simple_compare(IrradObj)
     runner._reset_metadict()
     if irrad_type == 'pulse':
@@ -241,6 +243,7 @@ def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
     a_fits, lam_fits = from_counts(name, fission_term, Count,
                                    a_vals_fix, lam_vals_fix,
                                    irrad_type,
+                                   output_path,
                                    cutoff_scale)
     return a_fits, lam_fits
 
