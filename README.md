@@ -16,3 +16,16 @@ The flow of this work is as follows:
 
 ### Delayed neutron counts
 - in progress
+
+
+
+DOCSTRINGS MISSING
+
+## Generating results
+To generate results, first the `ui.py` file should be configured to create the cases of interest.
+After this, the case should be built in `run.py`.
+This will build and run the OpenMC model, combine the concentrations with emission probability and decay constant data, and generate delayed neutron count rates.
+The count rates are then used with a non-linear least squares solve to generate the DNP group parameters.
+These parameters are written to CSV files, by default stored in the `postprocess` directory.
+Additionally, the full data to replicate the results is stored by default in the `results` directory.
+Ideally, the `results` directory should be renamed and saved somewhere to ensure the analysis can be replicated.
