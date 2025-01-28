@@ -13,19 +13,17 @@ if __name__ == '__main__':
     # Loop, move files, and run
     import ui
 
+    naming_modifier = 'K'
+
     run_omc = True
     decay_daughter = True
-
-    all_fits = dict()
-    all_fits['yield'] = {}
-    all_fits['halflife'] = {}
 
     dt = 0.1
     tf = ui.default_omc_decay_time
 
     change_variables = {
-        'nps': [10, 100, 500, 1000]
-        #'temperature_K': [0, 250, 294, 600, 900, 1200, 2500]
+        'nps': [1, 10, 100, 500, 1000]
+        #'temperature_K': [250, 294, 600, 900, 1200, 2500]
     }
 
     new_vars = combinations(change_variables)
@@ -33,16 +31,20 @@ if __name__ == '__main__':
     static_data = deepcopy(ui.static_data)
 
     for var_combo in new_vars:
-        csv_name = str(list(var_combo.values())).strip('[]').strip(']').replace(', ', '-')
+        all_fits = dict()
+        all_fits['yield'] = {}
+        all_fits['halflife'] = {}
+
+        csv_name = str(list(var_combo.values())).strip('[]').strip(']').replace(', ', '-') + naming_modifier
 
         pulse_data.update(var_combo)
         static_data.update(var_combo)
 
         all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
-                        ui.pulse_data, 'pulse')
+                        pulse_data, 'pulse')
 
         all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
-                        ui.static_data, 'saturation')
+                        static_data, 'saturation')
 
         all_fits = combine_pulse(all_fits)
 
