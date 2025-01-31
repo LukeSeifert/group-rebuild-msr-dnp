@@ -11,18 +11,28 @@ def plot_comparison(csvs, csv_name):
     compare_column_value = 'Static-Pulse'
     plot_topics = ['yields', 'halflives']
     y_names = ['Yield', 'Half-life [s]']
+    csv_name = './post-data.csv'
     yields = dict()
     halflives = dict()
+    names = list()
+    net_yields = list()
+    avg_hls = list()
     for i, fname in enumerate(plot_topics):
         df_use = None
         for j, csv in enumerate(csvs):
-            print(f'\nFile: {csv}')
+            #print(f'\nFile: {csv}')
             df, yields, halflives, net_yield, avg_hl = collect_data(fname,
                                                                     csv,
                                                                     y_names,
                                                                     yields,
                                                                     halflives,
-                                                                    i)
+                                                                    i,
+                                                                    compare_column_value=compare_column_value)
+            if net_yield > 0:
+                names.append(csv)
+                net_yields.append(net_yield)
+            if avg_hl > 0:
+                avg_hls.append(avg_hl)
 
             try:
                 df_new = df[df[compare_column] == compare_column_value]
@@ -43,6 +53,13 @@ def plot_comparison(csvs, csv_name):
             plt.close()
         except ValueError:
             continue
+    data = dict()
+    data['Data Source'] = names
+    data['Yield'] = net_yields
+    data['Half-life [s]'] = avg_hls
+    df = df.from_dict(data)
+    print(df)
+    df.to_csv('yield-hl-data.csv')
     return
 
 def static_concentration_comparison(csvs, top_num=10):
@@ -82,7 +99,7 @@ def static_concentration_comparison(csvs, top_num=10):
 if __name__ == '__main__':
     nps_analysis = True
     temp_analysis = False
-    num_nucs = 10
+    num_nucs = 1
 
     if nps_analysis:
         csvs = ['1nps', '10nps', '100nps', '500nps', '1000nps', '5000nps', '10000nps']
