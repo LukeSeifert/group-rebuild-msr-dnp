@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 def collect_data(fname, data_name, y_names, yields, halflives, i,
                  data_sources:list=None, net_yield=0,
-                 avg_hl=0):
+                 avg_hl=0, compare_column_value=False):
     try:
         df = pd.read_csv(f'./{fname}/{data_name}.csv')
     except FileNotFoundError:
@@ -19,8 +19,9 @@ def collect_data(fname, data_name, y_names, yields, halflives, i,
             data_sources = list(set(df["Data Source"].tolist()))
         for data_source in data_sources:
             yields[data_source] = df.loc[df["Data Source"] == data_source, f"{y_names[i]}"]
-            net_yield = yields[data_source].sum()
-            print(f'{data_source} yield: {round(net_yield, 5)}')
+            if data_source == compare_column_value:
+                net_yield = yields[data_source].sum()
+            #print(f'{data_source} yield: {round(net_yield, 5)}')
     
     if fname == 'halflives':
         plt.yscale('log')
@@ -28,8 +29,9 @@ def collect_data(fname, data_name, y_names, yields, halflives, i,
             data_sources = list(set(df["Data Source"].tolist()))
         for data_source in data_sources:
             halflives[data_source] = df.loc[df["Data Source"] == data_source, f"{y_names[i]}"]
-            avg_hl = np.sum(yields[data_source] * halflives[data_source] / yields[data_source].sum())
-            print(f'{data_source} average half-life: {round(avg_hl, 3)} s')
+            if data_source == compare_column_value:
+                avg_hl = np.sum(yields[data_source] * halflives[data_source] / yields[data_source].sum())
+            #print(f'{data_source} average half-life: {round(avg_hl, 3)} s')
     
     return df, yields, halflives, net_yield, avg_hl
 

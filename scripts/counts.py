@@ -27,6 +27,29 @@ class DelayedCounts:
         self.iaea_data = self.simple_irrad_obj._get_data()
         return
     
+    def _write_data(self):
+        csv_path = self.simple_irrad_obj.output_path + '/data.csv'
+        data = dict()
+        nucs = list()
+        pns = list()
+        pnse = list()
+        lams = list()
+        lamse = list()
+        for nuc in self.pns.keys():
+            nucs.append(nuc)
+            pns.append(self.pns[nuc].n)
+            pnse.append(self.pns[nuc].s)
+            lams.append(self.lams[nuc].n)
+            lamse.append(self.lams[nuc].s)
+        data['Nuclide'] = nucs
+        data['Pn'] = pns
+        data['Pn err'] = pnse
+        data['lam'] = lams
+        data['lam err'] = lamse
+        df = pd.DataFrame.from_dict(data)
+        df.to_csv(csv_path)
+        return
+    
     def _order_iaea_data(self):
         self.pns = dict()
         self.lams = dict()
@@ -57,6 +80,7 @@ class DelayedCounts:
             hl = ufloat(hl, d_hl)
             lam = unumpy.log(2) / hl
             self.lams[nuc] = lam
+        self._write_data()
         return
     
     def from_concs(self, csv_path, cutoff_scale = 1, debug=False):

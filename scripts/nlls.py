@@ -248,14 +248,12 @@ def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
     return a_fits, lam_fits
 
 def gen_fit(irrad_obj : IrradSimple,
-            data_dict : dict,
             irrad_type : str,
             runner : Run,
             Count : DelayedCounts,
             fit_func):
 
-    irradobj = irrad_obj(data_dict)
-    a_fits, lam_fits = fit_func(irradobj, irrad_type, runner, Count)
+    a_fits, lam_fits = fit_func(irrad_obj, irrad_type, runner, Count)
     return a_fits, lam_fits
 
 def generate_csvs(all_fits: dict,

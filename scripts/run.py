@@ -10,7 +10,9 @@ import ui
 def run_fit(all_fits, dt, tf, run_omc, decay_daughter, data,
             irrad_type:str='saturation'):
 
-    Count = DelayedCounts(dt, tf)
+    irrad_obj = IrradSimple(data)
+
+    Count = DelayedCounts(dt, tf, irrad_obj=irrad_obj)
     runner = Run(ui.nuc_list,
                  run_omc=run_omc,
                  decay_track=False,
@@ -24,8 +26,8 @@ def run_fit(all_fits, dt, tf, run_omc, decay_daughter, data,
     else:
         run_obj = runner
 
-    a_fit, lam_fit = nlls.gen_fit(IrradSimple,
-                                  data,
+
+    a_fit, lam_fit = nlls.gen_fit(irrad_obj,
                                   irrad_type,
                                   run_obj,
                                   Count,
@@ -53,7 +55,7 @@ if __name__ == '__main__':
 
     run_omc = False
     decay_daughter = True
-    csv_name = '920K'
+    csv_name = 'test'
 
     all_fits = dict()
     all_fits['yield'] = {}
@@ -65,9 +67,9 @@ if __name__ == '__main__':
     all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
                        ui.pulse_data, 'pulse')
 
-    all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
-                       ui.static_data, 'saturation')
+#    all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
+#                       ui.static_data, 'saturation')
 
-    all_fits = combine_pulse(all_fits)
+#    all_fits = combine_pulse(all_fits)
 
-    nlls.generate_csvs(all_fits, csv_name=csv_name)
+#    nlls.generate_csvs(all_fits, csv_name=csv_name)
