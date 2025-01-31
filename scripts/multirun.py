@@ -63,3 +63,4 @@ if __name__ == '__main__':
     
     for ti, t in enumerate(time_taken):
         print(f'Number {ti+1} took {round(t, 2)} s')
+    print(f'Net time of {round(sum(time_taken), 3)} s')

@@ -34,23 +34,24 @@ def collect_data(fname, data_name, y_names, yields, halflives, i,
     return df, yields, halflives, net_yield, avg_hl
 
 
-data_name = '920K'
-plot_topics = ['yields', 'halflives']
-y_names = ['Yield', 'Half-life [s]']
-yields = dict()
-halflives = dict()
-for i, fname in enumerate(plot_topics):
-    df, yields, halflives, net_yield, avg_hl = collect_data(fname,
-                                                            data_name,
-                                                            y_names,
-                                                            yields,
-                                                            halflives,
-                                                            i)
+if __name__ == '__main__':
+    data_name = '920K'
+    plot_topics = ['yields', 'halflives']
+    y_names = ['Yield', 'Half-life [s]']
+    yields = dict()
+    halflives = dict()
+    for i, fname in enumerate(plot_topics):
+        df, yields, halflives, net_yield, avg_hl = collect_data(fname,
+                                                                data_name,
+                                                                y_names,
+                                                                yields,
+                                                                halflives,
+                                                                i)
 
-    try:
-        sns.barplot(df, x='Group', y=y_names[i], hue='Data Source')
-        plt.legend(fontsize=12)
-        plt.savefig(f'{fname}.png')
-        plt.close()
-    except ValueError:
-        continue
+        try:
+            sns.barplot(df, x='Group', y=y_names[i], hue='Data Source')
+            plt.legend(fontsize=12)
+            plt.savefig(f'{fname}.png')
+            plt.close()
+        except ValueError:
+            continue

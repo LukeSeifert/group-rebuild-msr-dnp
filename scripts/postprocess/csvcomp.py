@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import plotvals
-from barcharts import collect_data
+from analysis import collect_data
 import seaborn as sns
 import pandas as pd
 import warnings
@@ -80,13 +80,13 @@ def static_concentration_comparison(csvs, top_num=10):
 
 
 if __name__ == '__main__':
-    nps_analysis = False
-    temp_analysis = True
+    nps_analysis = True
+    temp_analysis = False
     num_nucs = 10
 
     if nps_analysis:
-        csvs = ['1nps', '10nps', '100nps', '500nps', '1000nps']
-        csv_name = ['1', '10', '100', '500', '1000']
+        csvs = ['1nps', '10nps', '100nps', '500nps', '1000nps', '5000nps', '10000nps']
+        csv_name = ['1', '10', '100', '500', '1000', '5000', '10000']
     elif temp_analysis:
         csvs = ['0K', '250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
         csv_name = ['0K', '250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
