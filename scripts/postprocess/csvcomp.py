@@ -11,7 +11,6 @@ def plot_comparison(csvs, csv_name):
     compare_column_value = 'Static-Pulse'
     plot_topics = ['yields', 'halflives']
     y_names = ['Yield', 'Half-life [s]']
-    csv_name = './post-data.csv'
     yields = dict()
     halflives = dict()
     names = list()
@@ -20,7 +19,6 @@ def plot_comparison(csvs, csv_name):
     for i, fname in enumerate(plot_topics):
         df_use = None
         for j, csv in enumerate(csvs):
-            #print(f'\nFile: {csv}')
             df, yields, halflives, net_yield, avg_hl = collect_data(fname,
                                                                     csv,
                                                                     y_names,
@@ -40,7 +38,7 @@ def plot_comparison(csvs, csv_name):
                 continue
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
-                df_new[compare_column] = df_new[compare_column].replace(compare_column_value, csv_name[j])
+                df_new[compare_column] = df_new[compare_column].replace(compare_column_value, csv)
             try:
                 df_use = pd.concat([df_use, df_new])
             except TypeError:
@@ -54,16 +52,24 @@ def plot_comparison(csvs, csv_name):
         except ValueError:
             continue
     data = dict()
-    data['Data Source'] = names
-    data['Yield'] = net_yields
-    data['Half-life [s]'] = avg_hls
+    data['Data Source'] = csv_name
+    data[r'$\bar{\nu}_d$'] = net_yields
+    data[r'$\bar{T}$'] = avg_hls
+    data[r'$|\Delta \bar{\nu}_d|$'] = [round(abs(i - net_yields[-1]), 4) for i in net_yields]
+    data[r'$|\Delta \bar{T}|$'] = [round(abs(i - avg_hls[-1]), 4) for i in avg_hls]
     df = df.from_dict(data)
-    print(df)
+    print(df.to_latex(index=False))
     df.to_csv('yield-hl-data.csv')
     return
 
 def static_concentration_comparison(csvs, top_num=10):
     running_df = None
+    new_df_data = dict()
+    new_df_data['Nuclide'] = list()
+    new_df_data['CV [%]'] = list()
+    new_df_data['Pn'] = list()
+    new_df_data['Half-life [s]'] = list()
+    new_df_data['Eval-term'] = list()
     for csv in csvs:
         df = pd.read_csv(f'./archived-data/results-{csv}/Static/concs.csv',
                          header=None)
@@ -76,20 +82,39 @@ def static_concentration_comparison(csvs, top_num=10):
     
     all_nucs = list(set(df['Nuclide']))
     std_dev_concs = dict()
+    concentration_averages = dict()
     for nuc in all_nucs:
         cur_nuc_rows = running_df.loc[running_df['Nuclide'] == nuc]
         cur_nuc_concs = cur_nuc_rows['Concentration']
         std_dev = np.std(cur_nuc_concs)
         mean = np.mean(cur_nuc_concs)
-        std_dev_concs[nuc] = std_dev / mean # coefficient of variation
+        concentration_averages[nuc] = mean
+        std_dev_concs[nuc] = std_dev# / mean # coefficient of variation
     
-    sorted_devs = sorted(zip(std_dev_concs.values(), std_dev_concs.keys()),
-                         reverse=True)[:top_num]
-    for std_dev, nuc in sorted_devs:
-        print(f'{nuc} - {round(std_dev*100, 3)}%')
-        sns.barplot(running_df, x='Parameter', y='Concentration', errorbar=None)
-        plt.savefig(f'csvs-{nuc}.png')
-        plt.close()
+    data_df = pd.read_csv(f'./archived-data/results-{csv}/Static/data.csv')
+    net_dn_yield = 0
+    for nuc in all_nucs:
+        cur_data = data_df.loc[data_df['Nuclide'] == nuc]
+        pn = float(cur_data['Pn'])
+        lam = float(cur_data['lam'])
+        dn_yield = pn*lam*concentration_averages[nuc]
+        net_dn_yield += dn_yield
+
+    for nuc in all_nucs:
+        cur_data = data_df.loc[data_df['Nuclide'] == nuc]
+        pn = float(cur_data['Pn'])
+        lam = float(cur_data['lam'])
+        new_df_data['Nuclide'].append(nuc)
+        new_df_data['CV [%]'].append(std_dev_concs[nuc] * 100)
+        new_df_data['Pn'].append(pn)
+        new_df_data['Half-life [s]'].append(np.log(2)/lam)
+        dn_yield = pn*lam*concentration_averages[nuc]
+        new_df_data['Eval-term'].append(dn_yield/net_dn_yield*std_dev_concs[nuc])
+
+    new_df = pd.DataFrame.from_dict(new_df_data)
+    new_df = new_df.sort_values(by='Eval-term', ignore_index=True,
+                                ascending=False).iloc[:top_num]
+    print(new_df)
     return
         
         
@@ -99,11 +124,11 @@ def static_concentration_comparison(csvs, top_num=10):
 if __name__ == '__main__':
     nps_analysis = True
     temp_analysis = False
-    num_nucs = 1
+    num_nucs = 10
 
     if nps_analysis:
-        csvs = ['1nps', '10nps', '100nps', '500nps', '1000nps', '5000nps', '10000nps']
-        csv_name = ['1', '10', '100', '500', '1000', '5000', '10000']
+        csvs = ['1nps', '10nps', '100nps', '500nps', '1000nps', '5000nps', '10000nps', '50000nps', '100000nps', '500000nps', '1000000nps']
+        csv_name = ['1', '10', '100', '500', '1000', '5000', '10000', '50000', '100000', '500000', '1000000']
     elif temp_analysis:
         csvs = ['0K', '250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
         csv_name = ['0K', '250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
