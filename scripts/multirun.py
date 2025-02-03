@@ -14,17 +14,83 @@ if __name__ == '__main__':
     # Loop, move files, and run
     import ui
 
-    naming_modifier = 'nps'
+    naming_modifier = 'temp'
 
     run_omc = True
     decay_daughter = True
+    num_times = 10
 
     dt = 0.1
     tf = ui.default_omc_decay_time
 
+
+    rate = 1/20
+    repr_no_long = {'Kr': rate,
+                'Xe': rate,
+                'Se': rate,
+                'Nb': rate,
+                'Mo': rate,
+                'Tc': rate,
+                'Ru': rate,
+                'Rh': rate,
+                'Pd': rate,
+                'Ag': rate,
+                'Sb': rate,
+                'Te': rate,
+                }
+
+    repr_long = {'Kr': rate,
+                'Xe': rate,
+                'Se': rate,
+                'Nb': rate,
+                'Mo': rate,
+                'Tc': rate,
+                'Ru': rate,
+                'Rh': rate,
+                'Pd': rate,
+                'Ag': rate,
+                'Sb': rate,
+                'Te': rate,
+                }
+
+    rate = 1/(50*24*3600)
+    more_data = {'Y': rate,
+                'La': rate,
+                'Ce': rate,
+                'Pr': rate,
+                'Nd': rate,
+                'Pm': rate,
+                'Sm': rate,
+                'Gd': rate,
+                'Eu': rate
+    }
+    repr_long.update(more_data)
+
+    rate = 1/(60*24*3600)
+    more_data = {'Br': rate,
+                'I': rate
+    }
+    repr_long.update(more_data)
+
+    rate = 1/(200*24*3600)
+    more_data = {'Zr': rate,
+                'Cd': rate,
+                'In': rate,
+                'Sn': rate
+    }
+    repr_long.update(more_data)
+
     change_variables = {
         #'nps': [1, 10, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
-        #'temperature_K': [250, 294, 600, 900, 1200, 2500]
+        'temperature_K': [250, 294, 600, 900, 1200, 2500]
+        #'final_time': [60, 120, 240, 420, 600] # time sample is irradiated
+        #'omc_dec_step': [0.1, 0.5, 1, 2, 5, 10]
+        #'omc_dec_time': [60, 120, 240, 420, 600] # time sample is measured
+        #'repr': [repr_no_long, repr_long]
+        #
+        #'repr': multi_dict_eval # list of dicts with varying scaling rates
+        #'t_incore_s': np.linspace(0.5, 30, num_times)
+        #'t_excore_s': np.linspace(0.5, 30, num_times)
     }
 
     new_vars = combinations(change_variables)
