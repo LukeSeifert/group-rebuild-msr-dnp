@@ -39,13 +39,14 @@ def plot_comparison(csvs, csv_name):
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 df_new[compare_column] = df_new[compare_column].replace(compare_column_value, csv)
+                df_new['Stripped Source'] = csv_name[j]
             try:
                 df_use = pd.concat([df_use, df_new])
             except TypeError:
                 df_use = df_new
 
         try:
-            sns.barplot(df_use, x='Group', y=y_names[i], hue='Data Source')
+            sns.barplot(df_use, x='Group', y=y_names[i], hue='Stripped Source')
             plt.legend(fontsize=12)
             plt.savefig(f'{fname}-csvs.png')
             plt.close()
@@ -89,7 +90,7 @@ def static_concentration_comparison(csvs, top_num=10):
         std_dev = np.std(cur_nuc_concs)
         mean = np.mean(cur_nuc_concs)
         concentration_averages[nuc] = mean
-        std_dev_concs[nuc] = std_dev# / mean # coefficient of variation
+        std_dev_concs[nuc] = std_dev / mean # coefficient of variation
     
     data_df = pd.read_csv(f'./archived-data/results-{csv}/Static/data.csv')
     net_dn_yield = 0
@@ -130,8 +131,8 @@ if __name__ == '__main__':
         csvs = ['1nps', '10nps', '100nps', '500nps', '1000nps', '5000nps', '10000nps', '50000nps', '100000nps', '500000nps', '1000000nps']
         csv_name = ['1', '10', '100', '500', '1000', '5000', '10000', '50000', '100000', '500000', '1000000']
     elif temp_analysis:
-        csvs = ['0K', '250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
-        csv_name = ['0K', '250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
+        csvs = ['250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
+        csv_name = ['250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
     else:
         raise Exception('No analysis selected')
 

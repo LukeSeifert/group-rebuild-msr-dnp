@@ -14,16 +14,6 @@ if __name__ == '__main__':
     # Loop, move files, and run
     import ui
 
-    naming_modifier = 'temp'
-
-    run_omc = True
-    decay_daughter = True
-    num_times = 10
-
-    dt = 0.1
-    tf = ui.default_omc_decay_time
-
-
     rate = 1/20
     repr_no_long = {'Kr': rate,
                 'Xe': rate,
@@ -80,10 +70,24 @@ if __name__ == '__main__':
     }
     repr_long.update(more_data)
 
+
+    naming_modifier = 'tirrad'
+
+    run_omc = True
+    decay_daughter = True
+    num_times = 10
+    change_pulse_too = False
+
+    dt = 0.1
+    tf = ui.default_omc_decay_time
+
+
+
+
     change_variables = {
         #'nps': [1, 10, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
-        'temperature_K': [250, 294, 600, 900, 1200, 2500]
-        #'final_time': [60, 120, 240, 420, 600] # time sample is irradiated
+        #'temperature_K': [250, 294, 600, 900, 1200, 2500]
+        'final_time': [60, 120, 240, 420, 600] # time sample is irradiated
         #'omc_dec_step': [0.1, 0.5, 1, 2, 5, 10]
         #'omc_dec_time': [60, 120, 240, 420, 600] # time sample is measured
         #'repr': [repr_no_long, repr_long]
@@ -98,6 +102,9 @@ if __name__ == '__main__':
     static_data = deepcopy(ui.static_data)
     time_taken = list()
 
+
+    input(f'Change pulse is set to: {change_pulse_too}')
+
     for var_combo in new_vars:
         start = time()
         all_fits = dict()
@@ -106,7 +113,8 @@ if __name__ == '__main__':
 
         csv_name = str(list(var_combo.values())).strip('[]').strip(']').replace(', ', '-') + naming_modifier
 
-        pulse_data.update(var_combo)
+        if change_pulse_too:
+            pulse_data.update(var_combo)
         static_data.update(var_combo)
 
         all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
