@@ -76,7 +76,7 @@ if __name__ == '__main__':
     run_omc = True
     decay_daughter = True
     num_times = 10
-    change_pulse_too = False
+    change_pulse_too = True
 
     dt = 0.1
     tf = ui.default_omc_decay_time
@@ -87,7 +87,8 @@ if __name__ == '__main__':
     change_variables = {
         #'nps': [1, 10, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
         #'temperature_K': [250, 294, 600, 900, 1200, 2500]
-        'final_time': [60, 120, 240, 420, 600] # time sample is irradiated
+        #'final_time': [60, 120, 240, 420, 600] # time sample is irradiated
+        'dens_g_cc': [1, 5, 10, 50, 100]
         #'omc_dec_step': [0.1, 0.5, 1, 2, 5, 10]
         #'omc_dec_time': [60, 120, 240, 420, 600] # time sample is measured
         #'repr': [repr_no_long, repr_long]
