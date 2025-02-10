@@ -56,8 +56,8 @@ def plot_comparison(csvs, csv_name):
     data['Data Source'] = csv_name
     data[r'$\bar{\nu}_d$'] = net_yields
     data[r'$\bar{T}$'] = avg_hls
-    data[r'$|\Delta \bar{\nu}_d|$'] = [round(abs(i - net_yields[-1]), 4) for i in net_yields]
-    data[r'$|\Delta \bar{T}|$'] = [round(abs(i - avg_hls[-1]), 4) for i in avg_hls]
+    data[r'$|\Delta \bar{\nu}_d|$'] = [abs(i - net_yields[-1]) for i in net_yields]
+    data[r'$|\Delta \bar{T}| [s]$'] = [abs(i - avg_hls[-1]) for i in avg_hls]
     df = df.from_dict(data)
     print(df.to_latex(index=False))
     df.to_csv('yield-hl-data.csv')
@@ -123,8 +123,9 @@ def static_concentration_comparison(csvs, top_num=10):
 
 
 if __name__ == '__main__':
-    nps_analysis = True
+    nps_analysis = False
     temp_analysis = False
+    tirrad_analysis = True
     num_nucs = 10
 
     if nps_analysis:
@@ -133,6 +134,9 @@ if __name__ == '__main__':
     elif temp_analysis:
         csvs = ['250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
         csv_name = ['250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
+    elif tirrad_analysis:
+        csvs =  ['60tirrad', '120tirrad', '240tirrad', '420tirrad', '600tirrad']
+        csv_name = ['60 s', '120 s', '240 s', '420 s', '600 s']
     else:
         raise Exception('No analysis selected')
 
