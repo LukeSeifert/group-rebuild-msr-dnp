@@ -125,7 +125,8 @@ def static_concentration_comparison(csvs, top_num=10):
 if __name__ == '__main__':
     nps_analysis = False
     temp_analysis = False
-    tirrad_analysis = True
+    tirrad_analysis = False
+    dens_analysis = True
     num_nucs = 10
 
     if nps_analysis:
@@ -136,7 +137,12 @@ if __name__ == '__main__':
         csv_name = ['250K', '294K', '600K', '900K', '920K', '1200K', '2500K']
     elif tirrad_analysis:
         csvs =  ['60tirrad', '120tirrad', '240tirrad', '420tirrad', '600tirrad']
-        csv_name = ['60 s', '120 s', '240 s', '420 s', '600 s']
+        csv_name = [r'$60s$', r'$120s$', r'$240s$', r'$420s$', r'$600s$']
+    elif dens_analysis:
+        csvs = ['1gpcc', '5gpcc', '10gpcc', '50gpcc', '100gpcc']
+        csv_name = [r'$1\frac{g}{cm^3}$', r'$5\frac{g}{cm^3}$',
+                    r'$10\frac{g}{cm^3}$', r'$50\frac{g}{cm^3}$',
+                    r'$100\frac{g}{cm^3}$']
     else:
         raise Exception('No analysis selected')
 
