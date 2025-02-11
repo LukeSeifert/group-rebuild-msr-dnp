@@ -71,25 +71,20 @@ if __name__ == '__main__':
     repr_long.update(more_data)
 
 
-    naming_modifier = 'tirrad'
-
     run_omc = True
     decay_daughter = True
     num_times = 10
-    change_pulse_too = True
 
     dt = 0.1
     tf = ui.default_omc_decay_time
-
-
 
 
     change_variables = {
         #'nps': [1, 10, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
         #'temperature_K': [250, 294, 600, 900, 1200, 2500]
         #'final_time': [60, 120, 240, 420, 600] # time sample is irradiated
-        'dens_g_cc': [1, 5, 10, 50, 100]
-        #'omc_dec_step': [0.1, 0.5, 1, 2, 5, 10]
+        #'dens_g_cc': [1, 5, 10, 50, 100]
+        'omc_dec_step': [0.1, 0.5, 1, 2, 5, 10]
         #'omc_dec_time': [60, 120, 240, 420, 600] # time sample is measured
         #'repr': [repr_no_long, repr_long]
         #
@@ -98,13 +93,51 @@ if __name__ == '__main__':
         #'t_excore_s': np.linspace(0.5, 30, num_times)
     }
 
+    nameset = {
+        'nps': 'nps',
+        'temperature_K': 'K',
+        'final_time': 'tirrad',
+        'dens_g_cc': 'gpcc',
+        'omc_dec_step': 'decdt',
+        'omc_dec_time': 'dect',
+        'repr': 'repr',
+        #
+        'repr': 'vrepr',
+        't_incore_s': 'tin',
+        't_excore_s': 'tex'
+    }
+
+    dopulse = {
+        'nps': True,
+        'temperature_K': True,
+        'final_time': False,
+        'dens_g_cc': True,
+        'omc_dec_step': True,
+        'omc_dec_time': True,
+        'repr': False,
+        #
+        'repr': False,
+        't_incore_s': False,
+        't_excore_s': False
+    }
+
+    if len(change_variables.keys()) == 1:
+        naming_modifier = nameset[list(change_variables.keys())[0]]
+        change_pulse_too = dopulse[list(change_variables.keys())[0]]
+    elif len(change_variables.keys()) == 0:
+        naming_modifier = 'daughter'
+        change_pulse_too = False
+    else:
+        naming_modifier = 'multi'
+        change_pulse_too = True
+
     new_vars = combinations(change_variables)
     pulse_data = deepcopy(ui.pulse_data)
     static_data = deepcopy(ui.static_data)
     time_taken = list()
 
 
-    input(f'Change pulse is set to: {change_pulse_too}')
+    input(f'Change pulse is set to: {change_pulse_too} and name is {naming_modifier}')
 
     for var_combo in new_vars:
         start = time()
