@@ -166,5 +166,4 @@ cython_debug/
 *.h5
 
 # Scripts
-*.csv
 *.png

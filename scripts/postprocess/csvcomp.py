@@ -126,7 +126,8 @@ if __name__ == '__main__':
     nps_analysis = False
     temp_analysis = False
     tirrad_analysis = False
-    dens_analysis = True
+    dens_analysis = False
+    decdt_analysis = True
     num_nucs = 10
 
     if nps_analysis:
@@ -143,6 +144,11 @@ if __name__ == '__main__':
         csv_name = [r'$1\frac{g}{cm^3}$', r'$5\frac{g}{cm^3}$',
                     r'$10\frac{g}{cm^3}$', r'$50\frac{g}{cm^3}$',
                     r'$100\frac{g}{cm^3}$']
+    elif decdt_analysis:
+        base = [0.1, 0.5, 1, 2, 5, 10]
+        base.reverse()
+        csvs = [str(i) + 'decdt' for i in base]
+        csv_name = [str(i) + r'$s$' for i in base]
     else:
         raise Exception('No analysis selected')
 
