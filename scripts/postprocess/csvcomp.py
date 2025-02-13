@@ -128,7 +128,8 @@ if __name__ == '__main__':
     tirrad_analysis = False
     dens_analysis = False
     decdt_analysis = False
-    dect_analysis = True
+    dect_analysis = False
+    longrepr_analysis = True
     num_nucs = 10
 
     if nps_analysis:
@@ -154,7 +155,9 @@ if __name__ == '__main__':
         base = [60, 120, 240, 420, 600]
         csvs = [str(i) + 'dect' for i in base]
         csv_name = [str(i) + r'$s$' for i in base]
-
+    elif longrepr_analysis:
+        csvs = ['nolong', 'long']
+        csv_name = ['Without Large', 'With Large']
     else:
         raise Exception('No analysis selected')
 
