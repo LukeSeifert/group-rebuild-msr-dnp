@@ -16,7 +16,7 @@ def run_fit(all_fits, dt, tf, run_omc, decay_daughter, data,
     runner = Run(ui.nuc_list,
                  run_omc=run_omc,
                  decay_track=False,
-                 write_concs=False)
+                 write_concs=True)
     dec_runner = Run(ui.nuc_list,
                  run_omc=run_omc,
                  decay_track=True,

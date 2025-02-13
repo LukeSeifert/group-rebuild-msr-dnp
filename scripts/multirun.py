@@ -84,7 +84,7 @@ if __name__ == '__main__':
         #'temperature_K': [250, 294, 600, 900, 1200, 2500]
         #'final_time': [60, 120, 240, 420, 600] # time sample is irradiated
         #'dens_g_cc': [1, 5, 10, 50, 100]
-        'omc_dec_step': [0.1, 0.5, 1, 2, 5, 10]
+        #'omc_dec_step': [0.1, 0.5, 1, 2, 5, 10]
         #'omc_dec_time': [60, 120, 240, 420, 600] # time sample is measured
         #'repr': [repr_no_long, repr_long]
         #
@@ -101,8 +101,6 @@ if __name__ == '__main__':
         'omc_dec_step': 'decdt',
         'omc_dec_time': 'dect',
         'repr': 'repr',
-        #
-        'repr': 'vrepr',
         't_incore_s': 'tin',
         't_excore_s': 'tex'
     }
@@ -115,7 +113,6 @@ if __name__ == '__main__':
         'omc_dec_step': True,
         'omc_dec_time': True,
         'repr': False,
-        #
         'repr': False,
         't_incore_s': False,
         't_excore_s': False
@@ -126,12 +123,16 @@ if __name__ == '__main__':
         change_pulse_too = dopulse[list(change_variables.keys())[0]]
     elif len(change_variables.keys()) == 0:
         naming_modifier = 'daughter'
-        change_pulse_too = False
+        change_pulse_too = True
+        decay_daughter = False
     else:
         naming_modifier = 'multi'
         change_pulse_too = True
 
-    new_vars = combinations(change_variables)
+    try:
+        new_vars = combinations(change_variables)
+    except ValueError:
+        new_vars = [{}]
     pulse_data = deepcopy(ui.pulse_data)
     static_data = deepcopy(ui.static_data)
     time_taken = list()
@@ -146,6 +147,10 @@ if __name__ == '__main__':
         all_fits['halflife'] = {}
 
         csv_name = str(list(var_combo.values())).strip('[]').strip(']').replace(', ', '-') + naming_modifier
+        if csv_name == "{'Kr': 0.05-'Xe': 0.05-'Se': 0.05-'Nb': 0.05-'Mo': 0.05-'Tc': 0.05-'Ru': 0.05-'Rh': 0.05-'Pd': 0.05-'Ag': 0.05-'Sb': 0.05-'Te': 0.05}repr":
+            csv_name = 'nolong'
+        elif csv_name == "{'Kr': 0.05-'Xe': 0.05-'Se': 0.05-'Nb': 0.05-'Mo': 0.05-'Tc': 0.05-'Ru': 0.05-'Rh': 0.05-'Pd': 0.05-'Ag': 0.05-'Sb': 0.05-'Te': 0.05-'Y': 2.3148148148148148e-07-'La': 2.3148148148148148e-07-'Ce': 2.3148148148148148e-07-'Pr': 2.3148148148148148e-07-'Nd': 2.3148148148148148e-07-'Pm': 2.3148148148148148e-07-'Sm': 2.3148148148148148e-07-'Gd': 2.3148148148148148e-07-'Eu': 2.3148148148148148e-07-'Br': 1.9290123456790122e-07-'I': 1.9290123456790122e-07-'Zr': 5.787037037037037e-08-'Cd': 5.787037037037037e-08-'In': 5.787037037037037e-08-'Sn': 5.787037037037037e-08}repr":
+            csv_name = 'long'
 
         if change_pulse_too:
             pulse_data.update(var_combo)
