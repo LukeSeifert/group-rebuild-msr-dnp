@@ -127,7 +127,8 @@ if __name__ == '__main__':
     temp_analysis = False
     tirrad_analysis = False
     dens_analysis = False
-    decdt_analysis = True
+    decdt_analysis = False
+    dect_analysis = True
     num_nucs = 10
 
     if nps_analysis:
@@ -149,6 +150,11 @@ if __name__ == '__main__':
         base.reverse()
         csvs = [str(i) + 'decdt' for i in base]
         csv_name = [str(i) + r'$s$' for i in base]
+    elif dect_analysis:
+        base = [60, 120, 240, 420, 600]
+        csvs = [str(i) + 'dect' for i in base]
+        csv_name = [str(i) + r'$s$' for i in base]
+
     else:
         raise Exception('No analysis selected')
 
