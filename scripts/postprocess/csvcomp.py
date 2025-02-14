@@ -129,7 +129,8 @@ if __name__ == '__main__':
     dens_analysis = False
     decdt_analysis = False
     dect_analysis = False
-    longrepr_analysis = True
+    longrepr_analysis = False
+    decaydaught_analysis= True
     num_nucs = 10
 
     if nps_analysis:
@@ -158,6 +159,10 @@ if __name__ == '__main__':
     elif longrepr_analysis:
         csvs = ['nolong', 'long']
         csv_name = ['Without Large', 'With Large']
+    elif decaydaught_analysis:
+        csvs = ['daughter', '50000nps']
+        csv_name = ['Without Daughters', 'With Daughters']
+
     else:
         raise Exception('No analysis selected')
 
