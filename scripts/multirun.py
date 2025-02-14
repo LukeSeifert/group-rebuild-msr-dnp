@@ -113,7 +113,6 @@ if __name__ == '__main__':
         'omc_dec_step': True,
         'omc_dec_time': True,
         'repr': False,
-        'repr': False,
         't_incore_s': False,
         't_excore_s': False
     }
