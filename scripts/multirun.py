@@ -4,6 +4,7 @@ import nlls
 from copy import deepcopy
 import shutil
 from time import time
+import numpy as np
 
 def combinations(d):
     keys, values = zip(*d.items())
@@ -71,13 +72,20 @@ if __name__ == '__main__':
     repr_long.update(more_data)
 
 
+
     run_omc = True
     decay_daughter = True
-    num_times = 10
+    num_times = 4
+    repr_mults = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
     dt = 0.1
     tf = ui.default_omc_decay_time
 
+    base_repr = repr_long.copy()
+    multi_dict_eval = list()
+    for mult in repr_mults:
+        new_dict = {key: value * mult for key, value in base_repr.items()}
+        multi_dict_eval.append(new_dict)
 
     change_variables = {
         #'nps': [1, 10, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]
@@ -89,8 +97,8 @@ if __name__ == '__main__':
         #'repr': [repr_no_long, repr_long]
         #
         #'repr': multi_dict_eval # list of dicts with varying scaling rates
-        #'t_incore_s': np.linspace(0.5, 30, num_times)
-        #'t_excore_s': np.linspace(0.5, 30, num_times)
+        't_incore_s': np.linspace(5, 20, num_times)
+        #'t_excore_s': np.linspace(5, 20, num_times)
     }
 
     nameset = {
@@ -125,8 +133,8 @@ if __name__ == '__main__':
         change_pulse_too = True
         decay_daughter = False
     else:
-        naming_modifier = 'multi'
-        change_pulse_too = True
+        naming_modifier = 'times'
+        change_pulse_too = False
 
     try:
         new_vars = combinations(change_variables)
@@ -139,17 +147,19 @@ if __name__ == '__main__':
 
     input(f'Change pulse is set to: {change_pulse_too} and name is {naming_modifier}')
 
-    for var_combo in new_vars:
+    for combo_i, var_combo in enumerate(new_vars):
         start = time()
         all_fits = dict()
         all_fits['yield'] = {}
         all_fits['halflife'] = {}
 
-        csv_name = str(list(var_combo.values())).strip('[]').strip(']').replace(', ', '-') + naming_modifier
+        csv_name = str(list(var_combo.values())).strip('[]').strip(']').replace(', ', '-').replace('np.float64', '').replace('(', '').replace(')', '') + naming_modifier
         if csv_name == "{'Kr': 0.05-'Xe': 0.05-'Se': 0.05-'Nb': 0.05-'Mo': 0.05-'Tc': 0.05-'Ru': 0.05-'Rh': 0.05-'Pd': 0.05-'Ag': 0.05-'Sb': 0.05-'Te': 0.05}repr":
             csv_name = 'nolong'
         elif csv_name == "{'Kr': 0.05-'Xe': 0.05-'Se': 0.05-'Nb': 0.05-'Mo': 0.05-'Tc': 0.05-'Ru': 0.05-'Rh': 0.05-'Pd': 0.05-'Ag': 0.05-'Sb': 0.05-'Te': 0.05-'Y': 2.3148148148148148e-07-'La': 2.3148148148148148e-07-'Ce': 2.3148148148148148e-07-'Pr': 2.3148148148148148e-07-'Nd': 2.3148148148148148e-07-'Pm': 2.3148148148148148e-07-'Sm': 2.3148148148148148e-07-'Gd': 2.3148148148148148e-07-'Eu': 2.3148148148148148e-07-'Br': 1.9290123456790122e-07-'I': 1.9290123456790122e-07-'Zr': 5.787037037037037e-08-'Cd': 5.787037037037037e-08-'In': 5.787037037037037e-08-'Sn': 5.787037037037037e-08}repr":
             csv_name = 'long'
+        elif len(csv_name) > 20 and naming_modifier == 'repr':
+            csv_name = combo_i
 
         if change_pulse_too:
             pulse_data.update(var_combo)

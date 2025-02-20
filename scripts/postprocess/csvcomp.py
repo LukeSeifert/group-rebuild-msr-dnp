@@ -6,9 +6,8 @@ import pandas as pd
 import warnings
 import numpy as np
 
-def plot_comparison(csvs, csv_name):
+def plot_comparison(csvs, csv_name, compare_column_value):
     compare_column = 'Data Source'
-    compare_column_value = 'Static-Pulse'
     plot_topics = ['yields', 'halflives']
     y_names = ['Yield', 'Half-life [s]']
     yields = dict()
@@ -130,8 +129,10 @@ if __name__ == '__main__':
     decdt_analysis = False
     dect_analysis = False
     longrepr_analysis = False
-    decaydaught_analysis= True
+    decaydaught_analysis= False
+    int_ext_analysis = True
     num_nucs = 10
+    compare_column_value = 'Static-Pulse'
 
     if nps_analysis:
         csvs = ['1nps', '10nps', '100nps', '500nps', '1000nps', '5000nps', '10000nps', '50000nps', '100000nps', '500000nps', '1000000nps']
@@ -162,9 +163,12 @@ if __name__ == '__main__':
     elif decaydaught_analysis:
         csvs = ['daughter', '50000nps']
         csv_name = ['Without Daughters', 'With Daughters']
-
+    elif int_ext_analysis:
+        base = [5.0, 10.0, 15.0, 20.0]
+        csvs = [f'{i}-{j}times' for i in base for j in base]
+        csv_name = [fr'{round(i)}$s$, {round(j)}$s$' for i in base for j in base]
     else:
         raise Exception('No analysis selected')
 
     static_concentration_comparison(csvs, top_num=num_nucs)
-    plot_comparison(csvs, csv_name)
+    plot_comparison(csvs, csv_name, compare_column_value = 'Static-Pulse')
