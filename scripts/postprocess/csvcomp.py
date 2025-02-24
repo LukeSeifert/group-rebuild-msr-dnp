@@ -130,7 +130,8 @@ if __name__ == '__main__':
     dect_analysis = False
     longrepr_analysis = False
     decaydaught_analysis= False
-    int_ext_analysis = True
+    int_ext_analysis = False
+    int_analysis = True
     num_nucs = 10
     compare_column_value = 'Static-Pulse'
 
@@ -167,6 +168,11 @@ if __name__ == '__main__':
         base = [5.0, 10.0, 15.0, 20.0]
         csvs = [f'{i}-{j}times' for i in base for j in base]
         csv_name = [fr'{round(i)}$s$, {round(j)}$s$' for i in base for j in base]
+    elif int_analysis:
+        base = [5.0, 10.0, 15.0, 20.0]
+        csvs = [f'{i}tin' for i in base]
+        csv_name = [fr'{round(i)}$s$' for i in base]
+
     else:
         raise Exception('No analysis selected')
 
