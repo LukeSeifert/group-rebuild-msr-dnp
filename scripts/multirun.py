@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
     run_omc = True
     decay_daughter = True
-    num_times = 4
+    num_times = 20
     repr_mults = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
     dt = 0.1
@@ -96,9 +96,9 @@ if __name__ == '__main__':
         #'omc_dec_time': [60, 120, 240, 420, 600] # time sample is measured
         #'repr': [repr_no_long, repr_long]
         #
-        #'repr': multi_dict_eval # list of dicts with varying scaling rates
-        't_incore_s': np.linspace(5, 20, num_times)
-        #'t_excore_s': np.linspace(5, 20, num_times)
+        'repr': multi_dict_eval # list of dicts with varying scaling rates
+        #'t_incore_s': np.linspace(1, 20, num_times)
+        #'t_excore_s': np.linspace(1, 20, num_times)
     }
 
     nameset = {
@@ -120,7 +120,7 @@ if __name__ == '__main__':
         'dens_g_cc': True,
         'omc_dec_step': True,
         'omc_dec_time': True,
-        'repr': False,
+        'repr': True,
         't_incore_s': False,
         't_excore_s': False
     }
@@ -159,7 +159,7 @@ if __name__ == '__main__':
         elif csv_name == "{'Kr': 0.05-'Xe': 0.05-'Se': 0.05-'Nb': 0.05-'Mo': 0.05-'Tc': 0.05-'Ru': 0.05-'Rh': 0.05-'Pd': 0.05-'Ag': 0.05-'Sb': 0.05-'Te': 0.05-'Y': 2.3148148148148148e-07-'La': 2.3148148148148148e-07-'Ce': 2.3148148148148148e-07-'Pr': 2.3148148148148148e-07-'Nd': 2.3148148148148148e-07-'Pm': 2.3148148148148148e-07-'Sm': 2.3148148148148148e-07-'Gd': 2.3148148148148148e-07-'Eu': 2.3148148148148148e-07-'Br': 1.9290123456790122e-07-'I': 1.9290123456790122e-07-'Zr': 5.787037037037037e-08-'Cd': 5.787037037037037e-08-'In': 5.787037037037037e-08-'Sn': 5.787037037037037e-08}repr":
             csv_name = 'long'
         elif len(csv_name) > 20 and naming_modifier == 'repr':
-            csv_name = combo_i
+            csv_name = repr_mults[combo_i]
 
         if change_pulse_too:
             pulse_data.update(var_combo)

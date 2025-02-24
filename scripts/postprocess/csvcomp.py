@@ -170,6 +170,7 @@ if __name__ == '__main__':
         csv_name = [fr'{round(i)}$s$, {round(j)}$s$' for i in base for j in base]
     elif int_analysis:
         base = [5.0, 10.0, 15.0, 20.0]
+        base.reverse()
         csvs = [f'{i}tin' for i in base]
         csv_name = [fr'{round(i)}$s$' for i in base]
 
