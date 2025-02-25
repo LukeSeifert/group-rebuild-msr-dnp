@@ -73,15 +73,22 @@ x = np.reshape(X, (4, 4))
 y = np.reshape(Y, (4, 4))
 z = np.reshape(Z, (4, 4))
 
-x_name = r'$\tau_{in}$'
-y_name = r'$\tau_{ex}$'
+x_name = r'$\tau_{in}$ $[s]$ '
+y_name = r'$\tau_{ex}$ $[s]$'
 z_name = r'$\bar{\nu}_d$'
+
+#x_name = r'In-core Residence Time $[s]$'
+#y_name = r'Ex-core Residence Time $[s]$'
+#z_name = 'Total Delayed Neutron Yield'
+
 
 df = pd.DataFrame.from_dict(np.array([X,Y,Z]).T)
 df.columns = [x_name,y_name,z_name]
 df[z_name] = pd.to_numeric(df[z_name])
 pivotted= df.pivot(columns=y_name,index=x_name,values=z_name)
-ax = sns.heatmap(pivotted,cmap='flare')
+color = sns.color_palette("dark:pink_r", as_cmap=True)
+#ax = sns.heatmap(pivotted,cmap='cubehelix')
+ax = sns.heatmap(pivotted, cmap=color)
 ax.collections[0].colorbar.set_label(z_name)
 plt.tight_layout()
 

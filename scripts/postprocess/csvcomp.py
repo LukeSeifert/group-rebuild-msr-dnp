@@ -131,7 +131,8 @@ if __name__ == '__main__':
     longrepr_analysis = False
     decaydaught_analysis= False
     int_ext_analysis = False
-    int_analysis = True
+    int_analysis = False
+    reprscale_analysis = True
     num_nucs = 10
     compare_column_value = 'Static-Pulse'
 
@@ -173,6 +174,11 @@ if __name__ == '__main__':
         base.reverse()
         csvs = [f'{i}tin' for i in base]
         csv_name = [fr'{round(i)}$s$' for i in base]
+    elif reprscale_analysis:
+        #base = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+        base = [0.5, 0.7, 0.9, 1.0, 1.1, 1.3, 1.5]
+        csvs = [f'{i}repr' for i in base]
+        csv_name = [fr'Scale: {round(i, 1)}' for i in base]
 
     else:
         raise Exception('No analysis selected')
