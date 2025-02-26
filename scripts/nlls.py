@@ -88,7 +88,8 @@ class NLLS:
         #                            xtol=2.23e-16, gtol=2.23e-16,
         #                            verbose=0, ftol=2.23e-16)
         params, covariance, info, _, _ = curve_fit(func, self.times, adjusted_count_vals,
-                                    p0=[1]*self.num_unknowns, maxfev=100000,
+                                    p0=[1]*self.num_unknowns,
+                                    method='trf',
                                     bounds=(0, 1e3), full_output=True,
                                     #sigma=adjusted_count_uncerts,
                                     xtol=2.23e-16, gtol=2.23e-16,
