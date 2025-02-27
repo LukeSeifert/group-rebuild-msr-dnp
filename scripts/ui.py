@@ -64,6 +64,8 @@ def dict_builder(name=default_name, incore_t=default_incore_t,
 
 flow_data = dict_builder(name='Flowing', incore_t=10, excore_t=10)
 
+test_data = dict_builder(name='Test', incore_t=20, excore_t=20)
+
 static_data = dict_builder(name='Static', incore_t=10*2, excore_t=0)
 
 pulse_data = dict_builder(name='Pulse', incore_t=1/4*1e-3, excore_t=0,
