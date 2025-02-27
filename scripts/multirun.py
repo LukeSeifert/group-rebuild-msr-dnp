@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
     run_omc = True
     decay_daughter = True
-    num_times = 20
+    num_times = 4
     repr_mults = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
     dt = 0.1
@@ -96,9 +96,9 @@ if __name__ == '__main__':
         #'omc_dec_time': [60, 120, 240, 420, 600] # time sample is measured
         #'repr': [repr_no_long, repr_long]
         #
-        'repr': multi_dict_eval # list of dicts with varying scaling rates
-        #'t_incore_s': np.linspace(1, 20, num_times)
-        #'t_excore_s': np.linspace(1, 20, num_times)
+        #'repr': multi_dict_eval # list of dicts with varying scaling rates
+        't_incore_s': np.linspace(5, 20, num_times),
+        't_excore_s': np.linspace(5, 20, num_times)
     }
 
     nameset = {
