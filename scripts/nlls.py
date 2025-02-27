@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import curve_fit
+from scipy.optimize import least_squares
 from copy import deepcopy
 from counts import DelayedCounts
 import os
@@ -66,6 +67,20 @@ class NLLS:
             group_sum += group_val
         #delnu = group_sum
         delnu = np.log(group_sum)
+        return delnu
+    
+    def _group_combined_summer(self, t, *vector_vals: list):
+        group_sum = 0
+        vector_vals = vector_vals[0]
+        a_vals = vector_vals[:6]
+        lam_vals = vector_vals[6:]
+        for group in range(self.num_groups):
+            if self.fit_type == 'pulse':
+                group_val = (a_vals[group] * lam_vals[group] * np.exp(-lam_vals[group] * t))
+            elif self.fit_type == 'saturation' or self.fit_type == 'simpleflow':
+                group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
+            group_sum += group_val
+        delnu = group_sum
         return delnu
 
     def group_fit(self, fit_type: str):
@@ -219,6 +234,89 @@ def from_counts(name: str, fission_term: float, Count: DelayedCounts,
     tot_yield = sum(a_fits)
     _print_helper(name, a_fits, tot_yield, lam_fits, half_lives)
 
+    return a_fits, lam_fits
+
+def group_combined_fit(groups):
+    pulse_func = groups[0]._group_combined_summer
+    pulse_times = groups[0].times
+    pulse_counts = groups[0].counts
+    groups[0].fit_type = 'pulse'
+    pulse_counts = [i.n / (groups[0].fission_term * groups[0].efficiency) for i in groups[0].counts]
+
+    sat_func = groups[1]._group_combined_summer
+    sat_times = groups[1].times
+    sat_counts = groups[1].counts
+    sat_counts = [i.n / (groups[1].fission_term * groups[1].efficiency) for i in groups[1].counts]
+    groups[1].fit_type = 'saturation'
+
+    p0=[1]*groups[0].num_unknowns
+    #adjusted_counts = [unumpy.log(i / (self.fission_term * self.efficiency)) for i in self.counts]
+    #adjusted_count_vals = [unumpy.nominal_values(x) for x in adjusted_counts]
+
+    def residual_func(parameters, pulse_times, pulse_counts, sat_times, sat_counts):
+        parameters = np.array(parameters, dtype=float)
+        pulse_residual = (pulse_counts - pulse_func(pulse_times, parameters)) / pulse_counts
+        sat_residual = (sat_counts - sat_func(sat_times, parameters)) / sat_counts
+        net_residual = pulse_residual + sat_residual
+        print(net_residual)
+        return net_residual
+
+    start = time.time()
+    result = least_squares(residual_func, p0, bounds=(0, 1000), method='trf',
+                  ftol=None, xtol=None, gtol=1e-8,
+                  verbose=2,
+                  args=(pulse_times, pulse_counts, sat_times, sat_counts))
+    print(f'Took {round(time.time()-start, 3)}s for NLLS fit')
+    params = result.x
+    print(result)
+    print(f'{params = }')
+    #print(residual_func(result.x, pulse_times, pulse_counts, sat_times, sat_counts))
+    
+
+
+    a_fits = groups[0].a_vals_fix
+    a_vals = params[:groups[0].num_unknowns_a].tolist()
+    a_counter = 0
+    for ai, a in enumerate(a_fits):
+        if a == None:
+            a_fits[ai] = a_vals[a_counter]
+            a_counter += 1
+
+    lam_fits = groups[0].lam_vals_fix
+    lam_vals = params[groups[0].num_unknowns_a:].tolist()
+    lam_counter = 0
+    for lami, lam in enumerate(lam_fits):
+        if lam == None:
+            lam_fits[lami] = lam_vals[lam_counter]
+            lam_counter += 1
+
+    zipped = list(zip(a_fits, lam_fits))
+    sorted_zipped = sorted(zipped, key=lambda x: x[1])
+    a_fits_sorted, lam_fits_sorted = zip(*sorted_zipped)
+    a_fits = list(a_fits_sorted)
+    lam_fits = list(lam_fits_sorted)
+    print(sum(a_fits))
+
+    return a_fits, lam_fits
+    
+
+
+def from_combined_counts(names: list, fission_terms: list, Counts: list,
+                a_vals_fix: list, lam_vals_fix: list,
+                irrad_types: list,
+                output_paths: list,
+                cutoff_scale: float=1):
+    num_groups = len(a_vals_fix)
+    groups = list()
+    for i in range(len(names)):
+        csv_path = f'{output_paths[i]}/concs.csv'
+        times, counts = Counts[i].from_concs(csv_path, cutoff_scale=cutoff_scale)
+
+        group = NLLS(groups=num_groups, efficiency=1, fission_term=fission_terms[i],
+                    times=times, counts=counts, a_vals_fix=a_vals_fix,
+                    lam_vals_fix=lam_vals_fix)
+        groups.append(group)
+    a_fits, lam_fits = group_combined_fit(groups)
 
     return a_fits, lam_fits
 
@@ -245,6 +343,37 @@ def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
                                    a_vals_fix, lam_vals_fix,
                                    irrad_type,
                                    output_path,
+                                   cutoff_scale)
+    return a_fits, lam_fits
+
+
+def nlls_combined_fit(IrradObj: list, irrad_type: list, runner: list,
+                      Count: list, num_groups=6):
+    names = list()
+    output_paths = list()
+    fission_terms = list()
+    for i, irradobj in enumerate(IrradObj):
+        name = irradobj.name
+        output_path = irradobj.output_path
+        avgF, netF = runner[i].simple_compare(irradobj)
+        runner[i]._reset_metadict()
+        if irrad_type[i] == 'pulse':
+            fission_term = netF
+        elif irrad_type[i] == 'simpleflow' or irrad_type[i] == 'saturation':
+            fission_term = avgF
+        else:
+            raise ValueError(f'{irrad_type[i]} invalid')
+        names.append(name)
+        output_paths.append(output_path)
+        fission_terms.append(fission_term)
+
+    a_vals_fix = [None] * num_groups
+    lam_vals_fix = [None] * num_groups
+    cutoff_scale = 1
+    a_fits, lam_fits = from_combined_counts(names, fission_terms, Count,
+                                   a_vals_fix, lam_vals_fix,
+                                   irrad_type,
+                                   output_paths,
                                    cutoff_scale)
     return a_fits, lam_fits
 
