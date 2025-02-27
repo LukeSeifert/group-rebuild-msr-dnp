@@ -37,6 +37,40 @@ def run_fit(all_fits, dt, tf, run_omc, decay_daughter, data,
 
     return all_fits
 
+
+def run_combined_residual_fit(all_fits, dt, tf, run_omc, decay_daughter, data:dict):
+
+    irrad_objs = list()
+    run_objs = list()
+    counts = list()    
+    irrad_types = list()
+    for key, val in data.items():
+        irrad_types.append(key)
+        irrad_obj = IrradSimple(val)
+
+        Count = DelayedCounts(dt, tf, irrad_obj=irrad_obj)
+        runner = Run(ui.nuc_list,
+                    run_omc=run_omc,
+                    decay_track=False,
+                    write_concs=True)
+        dec_runner = Run(ui.nuc_list,
+                    run_omc=run_omc,
+                    decay_track=True,
+                    write_concs=True)
+        if decay_daughter:
+            run_obj = dec_runner
+        else:
+            run_obj = runner
+        irrad_objs.append(irrad_obj)
+        run_objs.append(run_obj)
+        counts.append(Count)
+
+    a_fit, lam_fit = nlls.nlls_combined_fit(irrad_objs, irrad_types, run_objs, counts)
+    all_fits['yield'][val['name']] = a_fit
+    all_fits['halflife'][val['name']] = np.log(2) / lam_fit
+
+    return all_fits
+
 def combine_pulse(all_fits):
     base_dict = deepcopy(all_fits)
     hl_fits = base_dict['halflife']
@@ -67,9 +101,13 @@ if __name__ == '__main__':
     all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
                        ui.pulse_data, 'pulse')
 
-#    all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
-#                       ui.static_data, 'saturation')
+    all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
+                       ui.test_data, 'saturation')
 
-#    all_fits = combine_pulse(all_fits)
+    all_fits = combine_pulse(all_fits)
 
-#    nlls.generate_csvs(all_fits, csv_name=csv_name)
+#    all_fits = run_combined_residual_fit(all_fits, dt, tf, run_omc, decay_daughter,
+#                                         {'pulse': ui.pulse_data, 'saturation': ui.test_data})
+
+    nlls.generate_csvs(all_fits, csv_name=csv_name)
+
