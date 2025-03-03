@@ -24,7 +24,7 @@ def plot_concs(conc_dict, names):
     for nuc, data in conc_dict.items():
         res_iter = 0
         for key, value in data.items():
-            plt.plot(value['x'], value['y'], label=names[res_iter], marker=markers[res_iter%len(markers)], markersize=5)
+            plt.plot(value['x'], value['y'], label=names[res_iter], marker=markers[res_iter%len(markers)], markersize=3)
             res_iter += 1
         plt.xlabel(r'Time $[s]$')
         plt.ylabel(r'Concentration $[atoms/cm^3]$')

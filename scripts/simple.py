@@ -290,6 +290,7 @@ class IrradSimple:
         cur_t = 0
         timesteps = []
         source_rates = []
+        break_condition = False
 
         def _step_helper(t, s, cur_t, net_t):
             break_condition = False
@@ -303,21 +304,13 @@ class IrradSimple:
             return break_condition, cur_t
 
 
-        while True:
+        while cur_t < self.net_irrad_time_s:
             break_condition, cur_t = _step_helper(self.t_incore/2, self.S_rate, cur_t,
                                            self.net_irrad_time_s)
-            if break_condition:
-                break
-
             break_condition, cur_t = _step_helper(self.t_excore, 0, cur_t,
                                            self.net_irrad_time_s)
-            if break_condition:
-                break
-
             break_condition, cur_t = _step_helper(self.t_incore/2, self.S_rate, cur_t,
                                            self.net_irrad_time_s)
-            if break_condition:
-                break
 
         return timesteps, source_rates
     
