@@ -106,8 +106,9 @@ class NLLS:
                                     p0=[1]*self.num_unknowns,
                                     method='trf',
                                     bounds=(0, 1e3), full_output=True,
+                                    maxfev=1e5,
                                     #sigma=adjusted_count_uncerts,
-                                    xtol=2.23e-16, gtol=2.23e-16,
+                                    gtol=2.23e-16,
                                     verbose=0, ftol=2.23e-16)
         end = time.time()
         print(f'Took {round(end-start, 3)}s for NLLS fit')
