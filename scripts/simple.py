@@ -304,12 +304,17 @@ class IrradSimple:
 
 
         while True:
-            break_condition, cur_t = _step_helper(self.t_incore, self.S_rate, cur_t,
+            break_condition, cur_t = _step_helper(self.t_incore/2, self.S_rate, cur_t,
                                            self.net_irrad_time_s)
             if break_condition:
                 break
 
             break_condition, cur_t = _step_helper(self.t_excore, 0, cur_t,
+                                           self.net_irrad_time_s)
+            if break_condition:
+                break
+
+            break_condition, cur_t = _step_helper(self.t_incore/2, self.S_rate, cur_t,
                                            self.net_irrad_time_s)
             if break_condition:
                 break
