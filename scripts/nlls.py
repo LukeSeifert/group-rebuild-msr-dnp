@@ -21,7 +21,8 @@ class NLLS:
     def __init__(self, groups: int, efficiency: float,
                  fission_term: float, times: list,
                  counts: list, a_vals_fix: list,
-                 lam_vals_fix: list):
+                 lam_vals_fix: list,
+                 irradobj: IrradSimple):
         self.num_groups = groups
         self.efficiency = efficiency
         self.fission_term = fission_term
@@ -33,7 +34,9 @@ class NLLS:
         self.num_unknowns_a   = len([i for i in a_vals_fix if i is None])
         self.num_unknowns_lam = len([i for i in lam_vals_fix if i is None])
         self.num_unknowns = self.num_unknowns_a + self.num_unknowns_lam
-
+        self.t_incore = irradobj.t_incore
+        self.t_excore = irradobj.t_excore
+        self.t_irrad  = irradobj.net_irrad_time_s
         return
     
     def _apply_fixed_terms(self, vector_vals: list):
@@ -62,7 +65,19 @@ class NLLS:
                 group_val = (a_vals[group] * lam_vals[group] * np.exp(-lam_vals[group] * t))
                 #group_val = (np.log(a_vals[group] * lam_vals[group]) - lam_vals[group] * t)
             elif self.fit_type == 'saturation' or self.fit_type == 'simpleflow':
-                group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
+                lam = lam_vals[group]
+                exp_l = np.exp(-lam * t)
+                exp_T = np.exp(-lam * self.t_irrad)
+                exp_ex = np.exp(-lam * self.t_excore)
+                sum_term = 0
+                eval_time = 0
+                j = 1
+                while eval_time < self.t_irrad:
+                    sum_term += np.exp(lam * (j * self.t_incore + (j-1) * self.t_excore - self.t_irrad))
+                    j += 1
+                    eval_time += self.t_excore + self.t_incore
+                group_val = a_vals[group] * exp_l * (1-exp_T + (1-exp_ex) * sum_term)
+                #group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
                 #group_val = (np.log(a_vals[group]) - lam_vals[group] * t)
             group_sum += group_val
         #delnu = group_sum
@@ -78,7 +93,19 @@ class NLLS:
             if self.fit_type == 'pulse':
                 group_val = (a_vals[group] * lam_vals[group] * np.exp(-lam_vals[group] * t))
             elif self.fit_type == 'saturation' or self.fit_type == 'simpleflow':
-                group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
+                lam = lam_vals[group]
+                exp_l = np.exp(-lam * t)
+                exp_T = np.exp(-lam * self.t_irrad)
+                exp_ex = np.exp(-lam * self.t_excore)
+                #group_val = (a_vals[group] * np.exp(-lam_vals[group] * t))
+                sum_term = 0
+                eval_time = 0
+                j = 0
+                while eval_time < self.t_irrad:
+                    sum_term += np.exp(lam * (j * self.t_incore + (j-1) * self.t_excore - self.t_irrad))
+                    j += 1
+                    eval_time += self.t_excore + self.t_incore
+                group_val = a_vals * exp_l * (1-exp_T + (1-exp_ex) * sum_term)
             group_sum += group_val
         delnu = group_sum
         return delnu
@@ -108,8 +135,10 @@ class NLLS:
                                     bounds=(0, 1e3), full_output=True,
                                     maxfev=1e5,
                                     #sigma=adjusted_count_uncerts,
-                                    gtol=2.23e-16,
-                                    verbose=0, ftol=2.23e-16)
+                                    gtol=None,
+                                    xtol=None,
+                                    verbose=0,
+                                    ftol=2.23e-16)
         end = time.time()
         print(f'Took {round(end-start, 3)}s for NLLS fit')
 
@@ -220,6 +249,7 @@ def from_counts(name: str, fission_term: float, Count: DelayedCounts,
                 a_vals_fix: list, lam_vals_fix: list,
                 irrad_type: str,
                 output_path: str,
+                irradobj: IrradSimple,
                 cutoff_scale: float=1):
     num_groups = len(a_vals_fix)
     csv_path = f'{output_path}/concs.csv'
@@ -228,7 +258,7 @@ def from_counts(name: str, fission_term: float, Count: DelayedCounts,
     num_groups = 6
     group = NLLS(groups=num_groups, efficiency=1, fission_term=fission_term,
                  times=times, counts=counts, a_vals_fix=a_vals_fix,
-                 lam_vals_fix=lam_vals_fix)
+                 lam_vals_fix=lam_vals_fix, irradobj=irradobj)
     a_fits, lam_fits = group.group_fit(irrad_type)
     group._plot(name, times, counts, a_fits, lam_fits, irrad_type)
     half_lives = [np.log(2)/lam for lam in lam_fits]
@@ -306,6 +336,7 @@ def from_combined_counts(names: list, fission_terms: list, Counts: list,
                 a_vals_fix: list, lam_vals_fix: list,
                 irrad_types: list,
                 output_paths: list,
+                irrad_objs: list,
                 cutoff_scale: float=1):
     num_groups = len(a_vals_fix)
     groups = list()
@@ -315,7 +346,7 @@ def from_combined_counts(names: list, fission_terms: list, Counts: list,
 
         group = NLLS(groups=num_groups, efficiency=1, fission_term=fission_terms[i],
                     times=times, counts=counts, a_vals_fix=a_vals_fix,
-                    lam_vals_fix=lam_vals_fix)
+                    lam_vals_fix=lam_vals_fix, irradobj=irrad_objs[i])
         groups.append(group)
     a_fits, lam_fits = group_combined_fit(groups)
 
@@ -330,7 +361,8 @@ def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
     if irrad_type == 'pulse':
         fission_term = netF
     elif irrad_type == 'simpleflow' or irrad_type == 'saturation':
-        fission_term = avgF
+        fission_term = netF / IrradObj.net_irrad_time_s #avgF
+        #fission_term = avgF
 
     #yields = [0.0004, 0.00171, 0.00245, 0.00075]
     #lams = np.log(2) / [12.71955, 4.64925, 1.86579, 0.34046]
@@ -344,6 +376,7 @@ def nlls_fit(IrradObj: IrradSimple, irrad_type: str, runner: Run,
                                    a_vals_fix, lam_vals_fix,
                                    irrad_type,
                                    output_path,
+                                   IrradObj,
                                    cutoff_scale)
     return a_fits, lam_fits
 
@@ -361,7 +394,7 @@ def nlls_combined_fit(IrradObj: list, irrad_type: list, runner: list,
         if irrad_type[i] == 'pulse':
             fission_term = netF
         elif irrad_type[i] == 'simpleflow' or irrad_type[i] == 'saturation':
-            fission_term = avgF
+            fission_term = netF / irradobj.net_irrad_time_s #avgF
         else:
             raise ValueError(f'{irrad_type[i]} invalid')
         names.append(name)
@@ -375,6 +408,7 @@ def nlls_combined_fit(IrradObj: list, irrad_type: list, runner: list,
                                    a_vals_fix, lam_vals_fix,
                                    irrad_type,
                                    output_paths,
+                                   IrradObj,
                                    cutoff_scale)
     return a_fits, lam_fits
 
