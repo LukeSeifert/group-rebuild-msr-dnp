@@ -130,9 +130,9 @@ if __name__ == '__main__':
     dect_analysis = False
     longrepr_analysis = False
     decaydaught_analysis= False
-    int_ext_analysis = False
+    int_ext_analysis = True
     int_analysis = False
-    reprscale_analysis = True
+    reprscale_analysis = False
     num_nucs = 10
     compare_column_value = 'Static-Pulse'
 
@@ -166,9 +166,12 @@ if __name__ == '__main__':
         csvs = ['daughter', '50000nps']
         csv_name = ['Without Daughters', 'With Daughters']
     elif int_ext_analysis:
-        base = [5.0, 10.0, 15.0, 20.0]
-        csvs = [f'{i}-{j}times' for i in base for j in base]
-        csv_name = [fr'{round(i)}$s$, {round(j)}$s$' for i in base for j in base]
+        #tin_base = [5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
+        #tex_base = [0, 5.0, 10.0, 15.0, 20.0, 25.0]
+        tin_base = [5.0]
+        tex_base = [0, 5.0, 10.0, 15.0, 20.0, 25.0]
+        csvs = [f'{i}-{j}times' for i in tin_base for j in tex_base]
+        csv_name = [fr'{round(i)}$s$, {round(j)}$s$' for i in tin_base for j in tex_base]
     elif int_analysis:
         base = [5.0, 10.0, 15.0, 20.0]
         base.reverse()
