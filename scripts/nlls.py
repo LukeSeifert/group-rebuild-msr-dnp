@@ -133,7 +133,7 @@ class NLLS:
                                     p0=[1]*self.num_unknowns,
                                     method='trf',
                                     bounds=(0, 1e3), full_output=True,
-                                    maxfev=1e5,
+                                    maxfev=1e6,
                                     #sigma=adjusted_count_uncerts,
                                     gtol=None,
                                     xtol=None,
