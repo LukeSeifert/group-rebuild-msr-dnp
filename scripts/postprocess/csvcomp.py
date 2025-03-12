@@ -62,7 +62,7 @@ def plot_comparison(csvs, csv_name, compare_column_value):
     df.to_csv('yield-hl-data.csv')
     return
 
-def static_concentration_comparison(csvs, top_num=10):
+def static_concentration_comparison(csvs, top_num=10, fiss_rates=None):
     running_df = None
     new_df_data = dict()
     new_df_data['Nuclide'] = list()
@@ -83,12 +83,14 @@ def static_concentration_comparison(csvs, top_num=10):
     all_nucs = list(set(df['Nuclide']))
     std_dev_concs = dict()
     concentration_averages = dict()
+    concs = dict()
     for nuc in all_nucs:
         cur_nuc_rows = running_df.loc[running_df['Nuclide'] == nuc]
         cur_nuc_concs = cur_nuc_rows['Concentration']
         std_dev = np.std(cur_nuc_concs)
         mean = np.mean(cur_nuc_concs)
         concentration_averages[nuc] = mean
+        concs[nuc] = cur_nuc_concs
         std_dev_concs[nuc] = std_dev / mean # coefficient of variation
     
     data_df = pd.read_csv(f'./archived-data/results-{csv}/Static/data.csv')
@@ -100,6 +102,7 @@ def static_concentration_comparison(csvs, top_num=10):
         dn_yield = pn*lam*concentration_averages[nuc]
         net_dn_yield += dn_yield
 
+    net_yields = np.zeros(len(concs[nuc]))
     for nuc in all_nucs:
         cur_data = data_df.loc[data_df['Nuclide'] == nuc]
         pn = float(cur_data['Pn'])
@@ -109,12 +112,17 @@ def static_concentration_comparison(csvs, top_num=10):
         new_df_data['Pn'].append(pn)
         new_df_data['Half-life [s]'].append(np.log(2)/lam)
         dn_yield = pn*lam*concentration_averages[nuc]
-        new_df_data['Eval-term'].append(dn_yield/net_dn_yield*std_dev_concs[nuc])
-
+        dn_yields = pn*lam*concs[nuc]
+        net_yields += dn_yields.to_numpy()
+        #new_df_data['Eval-term'].append(dn_yield/net_dn_yield*std_dev_concs[nuc])
+        new_df_data['Eval-term'].append(np.std(dn_yields)/np.mean(fission_rates))
+        #new_df_data['Eval-term'].append(std_dev_concs[nuc])
     new_df = pd.DataFrame.from_dict(new_df_data)
     new_df = new_df.sort_values(by='Eval-term', ignore_index=True,
                                 ascending=False).iloc[:top_num]
     print(new_df)
+    print(f'{net_yields/fission_rates = }')
+    print(f'{net_dn_yield/np.mean(fission_rates) = }')
     return
         
         
@@ -135,6 +143,7 @@ if __name__ == '__main__':
     reprscale_analysis = False
     num_nucs = 10
     compare_column_value = 'Static-Pulse'
+    fission_rates = None
 
     if nps_analysis:
         csvs = ['1nps', '10nps', '100nps', '500nps', '1000nps', '5000nps', '10000nps', '50000nps', '100000nps', '500000nps', '1000000nps']
@@ -168,10 +177,14 @@ if __name__ == '__main__':
     elif int_ext_analysis:
         #tin_base = [5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
         #tex_base = [0, 5.0, 10.0, 15.0, 20.0, 25.0]
-        tin_base = [5.0]
-        tex_base = [0, 5.0, 10.0, 15.0, 20.0, 25.0]
+        #tin_base = [5.0]
+        #tex_base = [0, 5.0, 10.0, 15.0, 20.0, 25.0]
+        #tin_base = [5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
+        tin_base = [5.0, 25.0]
+        tex_base = [0]
         csvs = [f'{i}-{j}times' for i in tin_base for j in tex_base]
         csv_name = [fr'{round(i)}$s$, {round(j)}$s$' for i in tin_base for j in tex_base]
+        fission_rates = [8.486e13, 8.487e13]
     elif int_analysis:
         base = [5.0, 10.0, 15.0, 20.0]
         base.reverse()
@@ -185,5 +198,6 @@ if __name__ == '__main__':
     else:
         raise Exception('No analysis selected')
 
-    static_concentration_comparison(csvs, top_num=num_nucs)
-    plot_comparison(csvs, csv_name, compare_column_value = 'Static-Pulse')
+    static_concentration_comparison(csvs, top_num=num_nucs, fiss_rates=fission_rates)
+    #plot_comparison(csvs, csv_name, compare_column_value = 'Static-Pulse')
+    plot_comparison(csvs, csv_name, compare_column_value = 'Static')
