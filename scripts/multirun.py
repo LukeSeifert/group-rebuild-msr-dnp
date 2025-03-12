@@ -74,9 +74,9 @@ if __name__ == '__main__':
 
 
 
-    run_omc = True
+    run_omc = False
     decay_daughter = True
-    overwrite_existing = True
+    overwrite_existing = False
     repr_mults = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
     dt = 0.1
@@ -99,7 +99,7 @@ if __name__ == '__main__':
         #
         #'repr': multi_dict_eval # list of dicts with varying scaling rates
         't_incore_s': [5.0, 10.0, 15.0, 20.0, 25.0, 30.0],
-        't_excore_s': [0.0,    5.0, 10.0, 15.0, 20.0, 25.0]
+        't_excore_s': [0,    5.0, 10.0, 15.0, 20.0, 25.0]
         #'t_incore_s': [5, 10, 15, 20],
         #'t_excore_s': [5, 10, 15, 20]
     }
@@ -157,6 +157,7 @@ if __name__ == '__main__':
         all_fits['halflife'] = {}
 
         source = './results'
+        base_destination = './postprocess/archived-data/'
 
         csv_name = str(list(var_combo.values())).strip('[]').strip(']').replace(', ', '-').replace('np.float64', '').replace('(', '').replace(')', '') + naming_modifier
         if csv_name == "{'Kr': 0.05-'Xe': 0.05-'Se': 0.05-'Nb': 0.05-'Mo': 0.05-'Tc': 0.05-'Ru': 0.05-'Rh': 0.05-'Pd': 0.05-'Ag': 0.05-'Sb': 0.05-'Te': 0.05}repr":
@@ -166,9 +167,9 @@ if __name__ == '__main__':
         elif len(csv_name) > 20 and naming_modifier == 'repr':
             csv_name = str(repr_mults[combo_i]) + 'repr'
 
-        destination = f'./postprocess/archived-data/results-{csv_name}'
+        destination = f'{base_destination}results-{csv_name}'
         
-        if not overwrite_existing:
+        if not overwrite_existing and run_omc:
             if os.path.exists(destination):
                 print(f'PATH {destination} EXISTS')
                 continue
@@ -176,6 +177,10 @@ if __name__ == '__main__':
         if change_pulse_too:
             pulse_data.update(var_combo)
         static_data.update(var_combo)
+
+        if not run_omc:
+            pulse_data['output_path'] = f'{destination}/Pulse'
+            static_data['output_path'] = f'{destination}/Static'
 
         all_fits = run_fit(all_fits, dt, tf, run_omc, decay_daughter,
                         pulse_data, 'pulse')
