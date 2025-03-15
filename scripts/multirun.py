@@ -192,7 +192,8 @@ if __name__ == '__main__':
 
         nlls.generate_csvs(all_fits, csv_name=csv_name)
 
-        shutil.move(source, destination)
+        if run_omc:
+            shutil.move(source, destination)
         end = time()
         time_taken.append(end-start)
     
