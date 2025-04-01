@@ -297,8 +297,10 @@ if __name__ == "__main__":
                  run_omc=omc,
                  decay_track=True,
                  write_concs=False)
+    static_data = ui.static_data
+    #static_data['output_path'] = './postprocess/archived-data/results-25.0-0times/Static'
     flowing = IrradSimple(data_dict=ui.flow_data)
-    static = IrradSimple(data_dict=ui.static_data)
+    static = IrradSimple(data_dict=static_data)
     pulse = IrradSimple(data_dict=ui.pulse_data)
     exflow = IrradSimple(data_dict=ui.mostly_excore_data)
     reprflow = IrradSimple(data_dict=ui.flow_repr_data)
