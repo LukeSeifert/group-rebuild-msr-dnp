@@ -184,7 +184,7 @@ if __name__ == '__main__':
         tex_base = [0]
         csvs = [f'{i}-{j}times' for i in tin_base for j in tex_base]
         csv_name = [fr'{round(i)}$s$, {round(j)}$s$' for i in tin_base for j in tex_base]
-        fission_rates = [8.486e13, 8.487e13]
+        fission_rates = [8.486e13] * len(tin_base)
     elif int_analysis:
         base = [5.0, 10.0, 15.0, 20.0]
         base.reverse()
@@ -199,5 +199,5 @@ if __name__ == '__main__':
         raise Exception('No analysis selected')
 
     static_concentration_comparison(csvs, top_num=num_nucs, fiss_rates=fission_rates)
-    #plot_comparison(csvs, csv_name, compare_column_value = 'Static-Pulse')
-    plot_comparison(csvs, csv_name, compare_column_value = 'Static')
+    plot_comparison(csvs, csv_name, compare_column_value = 'Static-Pulse')
+    #plot_comparison(csvs, csv_name, compare_column_value = 'Static')
