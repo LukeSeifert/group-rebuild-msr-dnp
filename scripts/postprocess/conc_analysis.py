@@ -34,7 +34,7 @@ def combine_dict(conc_dict, deca_dict):
 
  
 def plot_concs(conc_dict, names, typing='concs'):
-    markers = ['^', 'v', '<', '>']
+    markers = ['^', 'v', '<', '>', 's', 'p', '*', 'h', 'H', 'D', 'd']
     for nuc, data in conc_dict.items():
         res_iter = 0
         for key, value in data.items():
@@ -57,9 +57,11 @@ def plot_concs(conc_dict, names, typing='concs'):
 
 
 if __name__ == '__main__':
-    nucs = ['Br87']#['Br87', 'As86', 'Ge86', 'Br90', 'I137', 'Rb95', 'Br91']
-    res_files = ['5.0-0times', '25.0-0times']
-    names = [r'$\tau_{in}=5s, \tau_{ex}=0s$', r'$\tau_{in}=25s, \tau_{ex}=0s$'
+    nucs = ['Xe135']#['Br87', 'As86', 'Ge86', 'Br90', 'I137', 'Rb95', 'Br91']
+    #res_files = ['5.0-0times', '25.0-0times']
+    res_files = ['5.0-0.0times', '10.0-0.0times', '15.0-0.0times', '20.0-0.0times']
+    names = [r'$\tau_{in}=5s, \tau_{ex}=0s$', r'$\tau_{in}=10s, \tau_{ex}=0s$',
+             r'$\tau_{in}=15s, \tau_{ex}=0s$', r'$\tau_{in}=20s, \tau_{ex}=0s$'
              ]
     #res_files = ['5.0-5.0times', '10.0-10.0times', '15.0-15.0times', '20.0-20.0times']
     #names = [r'$\tau_{in}=5s, \tau_{ex}=5s$', r'$\tau_{in}=10s, \tau_{ex}=10s$',

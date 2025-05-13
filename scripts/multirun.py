@@ -74,9 +74,9 @@ if __name__ == '__main__':
 
 
 
-    run_omc = False
+    run_omc = True
     decay_daughter = True
-    overwrite_existing = False
+    overwrite_existing = True
     repr_mults = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
     dt = 0.1
@@ -98,8 +98,10 @@ if __name__ == '__main__':
         #'repr': [repr_no_long, repr_long]
         #
         #'repr': multi_dict_eval # list of dicts with varying scaling rates
-        't_incore_s': [5.0, 10.0, 15.0, 20.0, 25.0, 30.0],
-        't_excore_s': [0,    5.0, 10.0, 15.0, 20.0, 25.0]
+        #'t_incore_s': [5.0, 10.0, 15.0, 20.0, 25.0, 30.0],
+        #'t_excore_s': [0,    5.0, 10.0, 15.0, 20.0, 25.0]
+        't_incore_s': [5.0, 10.0, 15.0, 20.0],
+        't_excore_s': [0.0]
         #'t_incore_s': [5, 10, 15, 20],
         #'t_excore_s': [5, 10, 15, 20]
     }
